@@ -1,0 +1,698 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Typografie: System-UI zuerst (SF Pro auf macOS/iOS) — ruhiger „Apple“-Look ohne Webfont-Laden.
+ */
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --secondary: #ec4899;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --dark: #1f2937;
+  --light: #f8fafc;
+  --border: #e2e8f0;
+  /* Kontrast AA: etwas dunkleres Grau auf hellem Grund */
+  --text: #1e293b;
+  --text-light: #475569;
+  --bg-card: #ffffff;
+}
+
+/*
+ * Dark Mode — ruhiges Blau-Grau, klar getrennte Flächen.
+ * Mandantenfarben: --primary / --primary-dark kommen weiter von BrandingEffect.
+ */
+.dark {
+  color-scheme: dark;
+  --secondary: #f472b6;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+  /* helle Schrift für Utilities, die „text-dark“ nutzen */
+  --dark: #f8fafc;
+  /* Seitenhintergrund — deutlich dunkler */
+  --light: #04060b;
+  /* Karten / Modals — einen Hauch heller als Canvas */
+  --bg-card: #0a0f1a;
+  --border: #1a2433;
+  /* Schrift bleibt hell genug zum dunkleren Grund */
+  --text: #f4f7fc;
+  --text-light: #b4c4d9;
+  /* Abgestufte Flächen (Slate/Gray-Ersatz), alles eine Stufe dunkler */
+  --surface-0: #060910;
+  --surface-1: #0d131f;
+  --surface-2: #121a28;
+  --surface-3: #1a2432;
+  --surface-4: #223041;
+  /* Fokus-Ringe (ring-offset) auf Kartenfarbe statt Weiß */
+  --tw-ring-offset-color: var(--bg-card);
+}
+
+.dark body {
+  background: var(--light);
+  color: var(--text);
+}
+
+/* Tailwind text-text / text-text-light nutzen im Dark Mode die CSS-Variablen */
+.dark .text-text {
+  color: var(--text);
+}
+
+.dark .text-text-light {
+  color: var(--text-light);
+}
+
+.dark .bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .bg-light {
+  background-color: var(--light) !important;
+}
+
+.dark .text-dark {
+  color: var(--dark) !important;
+}
+
+.dark .border-border {
+  border-color: var(--border) !important;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #0c121e;
+  border-color: #243042;
+  color: var(--text);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #8fa1b8;
+}
+
+/* Textauswahl: klar, neutral-bläulich wie in Safari / System-Apps */
+::selection {
+  background-color: rgba(0, 122, 255, 0.22);
+  color: inherit;
+}
+
+.dark ::selection {
+  background-color: rgba(64, 156, 255, 0.32);
+  color: inherit;
+}
+
+/*
+ * Dark Mode — flächige Overrides für häufige Tailwind-Utilities (Slate/Gray/Badges).
+ * Höhere Spezifität (.dark …) überschreibt die Standard-Utilities innerhalb von .dark.
+ */
+.dark .bg-slate-50,
+.dark .bg-slate-50\/80,
+.dark .bg-slate-50\/95 {
+  background-color: color-mix(in srgb, var(--surface-1) 92%, transparent);
+}
+
+.dark .bg-slate-100 {
+  background-color: var(--surface-2);
+}
+
+.dark .bg-slate-200 {
+  background-color: var(--surface-3);
+}
+
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-50\/50:hover,
+.dark .hover\:bg-slate-50\/80:hover {
+  background-color: var(--surface-1);
+}
+
+.dark .hover\:bg-slate-100:hover {
+  background-color: var(--surface-2);
+}
+
+.dark .active\:bg-slate-100:active {
+  background-color: var(--surface-2);
+}
+
+.dark .active\:bg-slate-200:active {
+  background-color: var(--surface-3);
+}
+
+.dark .text-slate-400 {
+  color: #a8bdd9;
+}
+
+.dark .text-slate-500 {
+  color: #9bb4d4;
+}
+
+.dark .text-slate-600 {
+  color: #c8d7eb;
+}
+
+.dark .text-slate-700 {
+  color: #dee8f7;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200 {
+  border-color: var(--border);
+}
+
+.dark .bg-gray-100 {
+  background-color: var(--surface-2);
+}
+
+.dark .text-gray-600 {
+  color: var(--text-light);
+}
+
+.dark .text-gray-700 {
+  color: var(--text);
+}
+
+.dark .bg-gray-400 {
+  background-color: #3a4a5f;
+}
+
+.dark .from-gray-50 {
+  --tw-gradient-from: var(--surface-1) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(13 19 31 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.dark .to-gray-50 {
+  --tw-gradient-to: var(--surface-1) var(--tw-gradient-to-position);
+}
+
+.dark .from-slate-50 {
+  --tw-gradient-from: var(--surface-1) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(13 19 31 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.dark .to-slate-50 {
+  --tw-gradient-to: var(--surface-1) var(--tw-gradient-to-position);
+}
+
+.dark .from-gray-500 {
+  --tw-gradient-from: #64748b var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(100 116 139 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.dark .to-gray-600 {
+  --tw-gradient-to: #475569 var(--tw-gradient-to-position);
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: var(--border);
+}
+
+.dark .bg-white\/95 {
+  background-color: color-mix(in srgb, var(--bg-card) 94%, transparent);
+}
+
+.dark .focus\:bg-white:focus {
+  background-color: var(--surface-2);
+}
+
+.dark .border-border\/50 {
+  border-color: color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.dark .bg-primary\/5,
+.dark .hover\:bg-primary\/5:hover {
+  background-color: color-mix(in srgb, var(--primary) 12%, var(--surface-0));
+}
+
+.dark .bg-primary\/10,
+.dark .hover\:bg-primary\/10:hover {
+  background-color: color-mix(in srgb, var(--primary) 18%, var(--surface-0));
+}
+
+.dark .active\:bg-primary\/10:active {
+  background-color: color-mix(in srgb, var(--primary) 20%, var(--surface-0));
+}
+
+.dark .border-primary\/20 {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+}
+
+.dark .border-primary\/30 {
+  border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+}
+
+.dark .hover\:bg-slate-300:hover {
+  background-color: var(--surface-4);
+}
+
+.dark .hover\:border-slate-200:hover {
+  border-color: var(--border);
+}
+
+.dark .hover\:bg-white\/20:hover {
+  background-color: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+.dark .hover\:bg-red-50:hover {
+  background-color: rgba(127, 29, 29, 0.35);
+}
+
+.dark .active\:bg-red-100:active {
+  background-color: rgba(127, 29, 29, 0.45);
+}
+
+.dark .shadow-lg {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.45),
+    0 4px 6px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* Status- / Badge-Farben (pastell → dunkle Fläche, helle Schrift) */
+.dark .bg-blue-50 {
+  background-color: rgba(30, 64, 175, 0.35);
+}
+.dark .bg-blue-100 {
+  background-color: rgba(29, 78, 216, 0.4);
+}
+.dark .text-blue-600,
+.dark .text-blue-700 {
+  color: #dbeafe;
+}
+.dark .border-blue-200,
+.dark .border-blue-300 {
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
+.dark .bg-green-50 {
+  background-color: rgba(20, 83, 45, 0.38);
+}
+.dark .bg-green-100 {
+  background-color: rgba(22, 101, 52, 0.42);
+}
+.dark .text-green-600,
+.dark .text-green-700,
+.dark .text-green-800 {
+  color: #d1fae5;
+}
+.dark .border-green-200 {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.dark .bg-emerald-50 {
+  background-color: rgba(6, 78, 59, 0.38);
+}
+.dark .bg-emerald-100 {
+  background-color: rgba(4, 120, 87, 0.42);
+}
+.dark .text-emerald-600,
+.dark .text-emerald-700 {
+  color: #ccfbf1;
+}
+.dark .border-emerald-200 {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(120, 53, 15, 0.38);
+}
+.dark .bg-amber-100 {
+  background-color: rgba(146, 64, 14, 0.42);
+}
+.dark .text-amber-600,
+.dark .text-amber-700 {
+  color: #fef3c7;
+}
+.dark .border-amber-200 {
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.dark .bg-yellow-50 {
+  background-color: rgba(113, 63, 18, 0.38);
+}
+.dark .bg-yellow-100 {
+  background-color: rgba(133, 77, 14, 0.42);
+}
+.dark .text-yellow-700 {
+  color: #fef9c3;
+}
+.dark .border-yellow-200 {
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+.dark .bg-red-50 {
+  background-color: rgba(127, 29, 29, 0.38);
+}
+.dark .bg-red-100 {
+  background-color: rgba(153, 27, 27, 0.42);
+}
+.dark .text-red-600,
+.dark .text-red-700 {
+  color: #ffe4e6;
+}
+.dark .border-red-200 {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.dark .bg-purple-50 {
+  background-color: rgba(88, 28, 135, 0.35);
+}
+.dark .bg-purple-100 {
+  background-color: rgba(107, 33, 168, 0.42);
+}
+.dark .text-purple-600,
+.dark .text-purple-700 {
+  color: #f3e8ff;
+}
+.dark .border-purple-200,
+.dark .border-purple-300 {
+  border-color: rgba(192, 132, 252, 0.4);
+}
+
+.dark .bg-indigo-50 {
+  background-color: rgba(49, 46, 129, 0.38);
+}
+.dark .border-indigo-200 {
+  border-color: rgba(129, 140, 248, 0.45);
+}
+
+.dark .text-indigo-600 {
+  color: #e0e7ff;
+}
+
+.dark .bg-indigo-600 {
+  background-color: #4f46e5;
+}
+
+.dark .text-emerald-900 {
+  color: #d1fae5;
+}
+
+.dark .text-amber-800 {
+  color: #fde68a;
+}
+
+.dark .hover\:bg-amber-200:hover {
+  background-color: rgba(146, 64, 14, 0.55);
+}
+
+.dark .bg-green-500,
+.dark .bg-green-600 {
+  background-color: #16a34a;
+}
+
+.dark .hover\:bg-green-700:hover {
+  background-color: #15803d;
+}
+
+.dark .bg-red-500 {
+  background-color: #dc2626;
+}
+
+.dark .hover\:bg-red-600:hover {
+  background-color: #b91c1c;
+}
+
+.dark .text-black {
+  color: var(--text);
+}
+
+.dark .ring-primary\/20 {
+  --tw-ring-color: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.dark .ring-black\/5 {
+  --tw-ring-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.dark .shadow-xl {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.45),
+    0 8px 10px -6px rgba(0, 0, 0, 0.35);
+}
+
+.dark .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
+}
+
+html.dark {
+  scrollbar-color: var(--surface-3) var(--light);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Text',
+    'SF Pro Display',
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+  background: var(--light);
+  color: var(--text);
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings:
+    'kern' 1,
+    'liga' 1;
+  /* Safe area für Notch/Home-Indikator auf Mobilgeräten */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Eingaben: gleiche Familie, saubere Caret-Farbe */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+input,
+textarea {
+  caret-color: var(--primary, #6366f1);
+}
+
+/* iOS: Zoom beim Fokus vermeiden – Inputs auf kleinen Screens mind. 16px */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Fix für fixed/sticky Elemente: Safe-Area berücksichtigen */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  }
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes progressBar {
+    from {
+      width: 0;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-progressBar {
+    animation: progressBar 0.8s ease-out;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/*
+ * Auth-Seiten (Login, Registrierung, …): Formular immer hell.
+ * Am Dateiende, damit keine späteren .dark-Utility-Regeln die Felder wieder abdunkeln.
+ * color-scheme: light — native Eingaben folgen einer hellen Umgebung (Safari/Chrome).
+ */
+.auth-form-page {
+  color-scheme: light;
+}
+
+.dark .auth-form-page {
+  background-color: #f1f5f9 !important;
+}
+
+.dark .auth-form-page > .text-text-light {
+  color: #475569 !important;
+}
+
+.dark .auth-form-card {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    0 10px 15px -3px rgb(15 23 42 / 0.08),
+    0 4px 6px -4px rgb(15 23 42 / 0.06);
+}
+
+.dark .auth-form-card .text-text {
+  color: #1e293b !important;
+}
+
+.dark .auth-form-card .text-text-light {
+  color: #475569 !important;
+}
+
+.dark .auth-form-card .text-dark {
+  color: #1e293b !important;
+}
+
+html.dark .auth-form-page .auth-form-card input,
+html.dark .auth-form-page .auth-form-card select,
+html.dark .auth-form-page .auth-form-card textarea,
+html.dark .auth-form-page .auth-form-card input:hover,
+html.dark .auth-form-page .auth-form-card input:focus,
+html.dark .auth-form-page .auth-form-card input:focus-visible,
+html.dark .auth-form-page .auth-form-card input:active,
+html.dark .auth-form-page .auth-form-card select:hover,
+html.dark .auth-form-page .auth-form-card select:focus,
+html.dark .auth-form-page .auth-form-card textarea:hover,
+html.dark .auth-form-page .auth-form-card textarea:focus,
+html.dark .auth-form-page .auth-form-card textarea:focus-visible,
+html.dark .auth-form-page .auth-form-card textarea:active {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.auth-form-page .auth-form-card input,
+.auth-form-page .auth-form-card select,
+.auth-form-page .auth-form-card textarea {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.dark .auth-form-page .auth-form-card input::placeholder,
+.dark .auth-form-page .auth-form-card textarea::placeholder {
+  color: #64748b !important;
+}
+
+.dark .auth-form-page .auth-form-card input::-moz-placeholder,
+.dark .auth-form-page .auth-form-card textarea::-moz-placeholder {
+  color: #64748b !important;
+}
+
+.dark .auth-form-card .border-border {
+  border-color: #e2e8f0 !important;
+}
+
+.dark .auth-form-card .bg-light {
+  background-color: #f8fafc !important;
+}
+
+.dark .auth-form-card .bg-white {
+  background-color: #ffffff !important;
+}
+
+.dark .auth-form-card .border-b.border-border {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.auth-form-card input:-webkit-autofill,
+.auth-form-card input:-webkit-autofill:hover,
+.auth-form-card input:-webkit-autofill:focus,
+.auth-form-card input:-webkit-autofill:active {
+  -webkit-text-fill-color: #1e293b !important;
+  caret-color: var(--primary, #6366f1);
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 99999s ease-out;
+}
+
+html.dark .auth-form-card input:-webkit-autofill,
+html.dark .auth-form-card input:-webkit-autofill:hover,
+html.dark .auth-form-card input:-webkit-autofill:focus,
+html.dark .auth-form-card input:-webkit-autofill:active {
+  -webkit-text-fill-color: #1e293b !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>Dashboard Pro</title>
+  <rect width="32" height="32" rx="8" fill="#6366f1"/>
+  <!-- Mini-Dashboard: steigende Balken -->
+  <rect x="7" y="19" width="4.5" height="8" rx="1.25" fill="#fff" opacity="0.95"/>
+  <rect x="13.75" y="14" width="4.5" height="13" rx="1.25" fill="#fff" opacity="0.95"/>
+  <rect x="20.5" y="8" width="4.5" height="19" rx="1.25" fill="#fff"/>
+</svg>

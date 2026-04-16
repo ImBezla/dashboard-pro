@@ -1,0 +1,25 @@
+# Optional: Postgres für lokale/staging-nahe Umgebung (Produktion: managed DB).
+# Start: docker compose up -d
+# DATABASE_URL in apps/api/.env z. B.:
+#   postgresql://dashboardpro:dashboardpro@localhost:5432/dashboardpro?schema=public
+# Dann in schema.prisma provider auf "postgresql" umstellen und Migrationen neu erzeugen.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: dashboardpro
+      POSTGRES_PASSWORD: dashboardpro
+      POSTGRES_DB: dashboardpro
+    volumes:
+      - dashboardpro_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dashboardpro -d dashboardpro']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dashboardpro_pg:

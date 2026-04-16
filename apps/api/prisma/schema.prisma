@@ -1,0 +1,413 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  /// Struktur: OPERATING | HOLDING | FAMILY_OFFICE | AG (für Mandanten / Multi-Gesellschaften)
+  kind      String   @default("OPERATING")
+  joinCode  String   @unique
+  settings  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members          OrganizationMember[]
+  usersActiveOrg   User[]               @relation("UserActiveOrganization")
+  teams            Team[]
+  projects         Project[]
+  customers        Customer[]
+  suppliers        Supplier[]
+  products         Product[]
+  invoices         Invoice[]
+  purchaseOrders   PurchaseOrder[]
+  tags             Tag[]
+  calendarEvents   CalendarEvent[]
+  activityLogs       ActivityLog[]
+  fileAttachments      FileAttachment[]
+  securityAuditLogs    SecurityAuditLog[]
+  opsWorkspaceState    OpsWorkspaceState?
+}
+
+/// Flow-Editor: Nutzer-Flows + Graph + ausgeblendete Demo-IDs pro Organisation (JSON).
+model OpsWorkspaceState {
+  id               String       @id @default(uuid())
+  organizationId String       @unique
+  payloadJson    String
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  userId         String
+  organizationId String
+  role           String       @default("MEMBER")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("MEMBER")
+  avatar    String?
+  /// Aktuell gewählte Organisation (JWT + APIs); muss einer Membership entsprechen.
+  activeOrganizationId String?
+  activeOrganization     Organization? @relation("UserActiveOrganization", fields: [activeOrganizationId], references: [id], onDelete: SetNull)
+  /// gesetzt nach Klick auf Bestätigungslink; null = noch nicht verifiziert
+  emailVerifiedAt                 DateTime?
+  emailVerificationTokenHash      String?
+  emailVerificationExpiresAt      DateTime?
+  passwordResetTokenHash          String?
+  passwordResetExpiresAt          DateTime?
+  lastVerificationEmailSentAt     DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams                 TeamMember[]
+  tasks                 Task[]        @relation("UserTasks")
+  activities            ActivityLog[]
+  comments              Comment[]
+  timeEntries           TimeEntry[]
+  organizationMembers   OrganizationMember[]
+  calendarEvents        CalendarEvent[]
+  securityAuditLogs     SecurityAuditLog[]
+  notificationPreferences UserNotificationPreferences?
+}
+
+/// Serverseitige Kanal- und Themen-Präferenzen (E-Mail, SMS, Erinnerungen).
+model UserNotificationPreferences {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pushEnabled  Boolean @default(true)
+  emailEnabled Boolean @default(true)
+  smsEnabled   Boolean @default(false)
+  /// E.164, z. B. +491701234567 (für SMS via Twilio, wenn konfiguriert)
+  phoneE164    String?
+
+  emailTaskAssigned   Boolean @default(true)
+  emailTaskDue        Boolean @default(true)
+  emailProjectUpdate  Boolean @default(true)
+  emailMentions       Boolean @default(true)
+  emailWeeklyDigest   Boolean @default(false)
+  emailCalendarEvents Boolean @default(true)
+
+  smsTaskAssigned     Boolean @default(false)
+  smsTaskDue          Boolean @default(false)
+  smsCalendarEvents   Boolean @default(false)
+
+  /// Einwilligung SMS (Transaktional); gesetzt beim ersten Aktivieren mit Bestätigung
+  smsConsentAt DateTime?
+
+  /// Tage vor der Deadline für die erste Erinnerung (0 = am Fälligkeitstag)
+  taskDueReminderDaysBefore Int @default(1)
+
+  lastWeeklyDigestSentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Team {
+  id             String       @id @default(uuid())
+  name           String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      TeamMember[]
+  projects     Project[]
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  userId    String
+  teamId    String
+  role      String   @default("MEMBER")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+model Project {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  status         String       @default("ACTIVE")
+  deadline       DateTime?
+  teamId         String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tasks        Task[]
+  comments     Comment[]
+  tags         ProjectTag[]
+  timeEntries  TimeEntry[]
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  status      String      @default("OPEN")
+  priority    String      @default("MEDIUM")
+  deadline    DateTime?
+
+  projectId   String?
+  assignedToId String?
+
+  isRecurring        Boolean   @default(false)
+  recurrenceType     String?
+  recurrenceInterval Int?      @default(1)
+  recurrenceEndDate  DateTime?
+  parentTaskId       String?
+
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assignedTo User?    @relation("UserTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments   Comment[]
+  tags       TaskTag[]
+  timeEntries TimeEntry[]
+
+  /// Letzte automatische Deadline-Erinnerung (E-Mail/SMS), um Spam zu vermeiden
+  lastDeadlineReminderSentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  taskId    String?
+  projectId String?
+  userId    String
+
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  color          String   @default("#6366f1")
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tasks        TaskTag[]
+  projects     ProjectTag[]
+
+  @@unique([organizationId, name])
+}
+
+model TaskTag {
+  id     String @id @default(uuid())
+  taskId String
+  tagId  String
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, tagId])
+}
+
+model ProjectTag {
+  id        String @id @default(uuid())
+  projectId String
+  tagId     String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, tagId])
+}
+
+model TimeEntry {
+  id          String   @id @default(uuid())
+  description String?
+  duration    Int
+  date        DateTime @default(now())
+  taskId      String?
+  projectId   String?
+  userId      String
+
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id             String   @id @default(uuid())
+  userId         String?
+  organizationId String
+  type           String
+  message        String
+  metadata       String?
+  createdAt      DateTime @default(now())
+
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+/// Sicherheits- und Compliance-Protokoll (Workspace-Einstellungen, sensible Aktionen).
+model SecurityAuditLog {
+  id               String   @id @default(uuid())
+  createdAt        DateTime @default(now())
+  organizationId String?
+  userId           String
+  action           String
+  metadata         String?
+  ipAddress        String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model CalendarEvent {
+  id             String   @id @default(uuid())
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime?
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id             String   @id @default(uuid())
+  name           String
+  email          String?
+  phone          String?
+  company        String?
+  address        String?
+  notes          String?
+  status         String   @default("active")
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices     Invoice[]
+}
+
+model Supplier {
+  id             String   @id @default(uuid())
+  name           String
+  email          String?
+  phone          String?
+  company        String?
+  address        String?
+  notes          String?
+  status         String   @default("active")
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+}
+
+model Invoice {
+  id             String   @id @default(uuid())
+  invoiceNumber  String
+  customerId     String
+  amount         Float
+  status         String   @default("DRAFT")
+  dueDate        DateTime?
+  items          String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, invoiceNumber])
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  price          Float
+  sku            String?
+  stock          Int      @default(0)
+  category       String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model PurchaseOrder {
+  id             String   @id @default(uuid())
+  orderNumber    String
+  supplier       String
+  supplierId     String?
+  product        String
+  quantity       Int
+  unitPrice      Float
+  total          Float
+  status         String   @default("PENDING")
+  orderDate      DateTime @default(now())
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  linkedSupplier Supplier?    @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, orderNumber])
+}
+
+model FileAttachment {
+  id             String   @id @default(uuid())
+  filename       String
+  originalName   String
+  mimeType       String
+  size           Int
+  path           String
+  taskId         String?
+  projectId      String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}

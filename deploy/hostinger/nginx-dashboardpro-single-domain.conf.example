@@ -1,0 +1,59 @@
+# nginx (nur HTTP) — **eine** Domain: @MAIN_DOMAIN@ (Web) und /api/* (API)
+# Platzhalter @MAIN_DOMAIN@ @WEB_PORT@ @API_PORT@ ersetzt setup-on-vps.sh (mit TEMPLATE=...)
+#
+# Web:           http://@MAIN_DOMAIN@/        → Next.js (127.0.0.1:@WEB_PORT@)
+# API (REST):    http://@MAIN_DOMAIN@/api/... → Nest (127.0.0.1:@API_PORT@)
+# Socket.IO:     http://@MAIN_DOMAIN@/api/socket.io/ → Nest Socket.IO
+#
+# WICHTIG: Web muss NEXT_PUBLIC_API_URL=/api bekommen.
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name @MAIN_DOMAIN@ www.@MAIN_DOMAIN@;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # API unter /api (Prefix wird durch trailing slash entfernt)
+    location ^~ /api/ {
+        proxy_pass http://127.0.0.1:@API_PORT@/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Socket.IO (WebSocket Upgrade)
+    location ^~ /api/socket.io/ {
+        proxy_pass http://127.0.0.1:@API_PORT@/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400;
+    }
+
+    # Web (alles andere)
+    location / {
+        proxy_pass http://127.0.0.1:@WEB_PORT@;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }
+}
+

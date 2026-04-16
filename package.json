@@ -1,0 +1,37 @@
+{
+  "name": "dashboardpro",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:fresh": "bash scripts/free-dev-ports.sh && turbo run dev",
+    "dev:web": "npm run dev --workspace=@dashboardpro/web",
+    "dev:api": "npm run dev --workspace=@dashboardpro/api",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "npm test --workspace=@dashboardpro/api",
+    "test:e2e": "npm run test:e2e --workspace=@dashboardpro/web",
+    "db:migrate": "cd apps/api && npx prisma migrate dev",
+    "db:reset": "cd apps/api && npx prisma migrate reset --force",
+    "db:generate": "cd apps/api && npx prisma generate",
+    "db:seed": "cd apps/api && ts-node prisma/seed.ts",
+    "db:migrate:deploy": "cd apps/api && npx prisma migrate deploy",
+    "docker:deploy:build": "docker compose --env-file .env.deploy -f docker-compose.deploy.yml build",
+    "docker:deploy:up": "docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build",
+    "docker:deploy:down": "docker compose --env-file .env.deploy -f docker-compose.deploy.yml down",
+    "dist:deploy": "bash scripts/build-deploy-bundle.sh",
+    "deploy:verify": "bash scripts/verify-env-deploy.sh"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0",
+    "typescript": "^5.2.2"
+  }
+}
+
