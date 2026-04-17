@@ -79,11 +79,16 @@ async function bootstrap() {
       'Content-Type',
       'Authorization',
       'Accept',
+      'Accept-Language',
       'X-Requested-With',
+      'Sec-Fetch-Mode',
+      'Sec-Fetch-Site',
+      'Sec-Fetch-Dest',
     ],
     exposedHeaders: ['Authorization'],
     preflightContinue: false,
     optionsSuccessStatus: 204,
+    maxAge: 86_400,
   });
 
   app.useGlobalPipes(

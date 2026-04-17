@@ -89,6 +89,11 @@ export class EmailService {
     return this.transporter !== null;
   }
 
+  /** True, wenn SMTP (oder Gmail-App-Passwort) gesetzt ist und Versand versucht werden kann. */
+  isSmtpConfigured(): boolean {
+    return this.isConfigured();
+  }
+
   private frontendBaseUrl(): string {
     return (process.env.FRONTEND_URL || 'http://localhost:8000').replace(
       /\/$/,

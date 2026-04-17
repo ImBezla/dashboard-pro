@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { ExecutionContext, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -36,6 +36,12 @@ import { RemindersModule } from './reminders/reminders.module';
       throttlers: [{ ttl: 60_000, limit: 120 }],
       errorMessage:
         'Zu viele Anfragen von dieser Adresse. Bitte kurz warten und erneut versuchen.',
+      // CORS-Preflight nicht zählen (sonst blockiert Throttling u. U. OPTIONS vor POST)
+      skipIf: (context: ExecutionContext) => {
+        if (context.getType() !== 'http') return false;
+        const req = context.switchToHttp().getRequest<{ method?: string }>();
+        return req?.method === 'OPTIONS';
+      },
     }),
     PrismaModule,
     AuthModule,

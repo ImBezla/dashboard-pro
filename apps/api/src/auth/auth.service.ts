@@ -92,6 +92,12 @@ export class AuthService {
       };
     }
 
+    if (!this.emailService.isSmtpConfigured()) {
+      throw new BadRequestException(
+        'E-Mail-Bestätigung ist aktiv, aber SMTP ist nicht konfiguriert. Bitte SMTP_HOST, SMTP_USER und SMTP_PASS setzen (oder Gmail mit App-Passwort). Für Test-/Beta-Umgebungen ohne Mailserver: SKIP_EMAIL_VERIFICATION=true.',
+      );
+    }
+
     const rawVerify = this.generateRawToken();
     const verifyHash = this.hashToken(rawVerify);
     const verifyExpires = new Date(
@@ -125,7 +131,7 @@ export class AuthService {
     if (!sent) {
       await this.prisma.user.delete({ where: { id: user.id } });
       throw new ServiceUnavailableException(
-        'Die Bestätigungs-E-Mail konnte nicht versendet werden. Bitte prüfen Sie die SMTP-Einstellungen (SMTP_HOST, SMTP_USER, SMTP_PASS bzw. GMAIL_APP_PASSWORD) oder versuchen Sie es später erneut.',
+        'Die Bestätigungs-E-Mail konnte nicht versendet werden (SMTP-Verbindung oder Provider). Bitte später erneut versuchen oder SMTP-Einstellungen prüfen.',
       );
     }
 
@@ -186,6 +192,12 @@ export class AuthService {
 
     if (!user || user.emailVerifiedAt) {
       return generic;
+    }
+
+    if (!this.emailService.isSmtpConfigured()) {
+      throw new BadRequestException(
+        'SMTP ist nicht konfiguriert — eine neue Bestätigungs-E-Mail kann nicht versendet werden.',
+      );
     }
 
     const last = user.lastVerificationEmailSentAt;
@@ -270,6 +282,10 @@ export class AuthService {
     };
 
     if (!user || !user.emailVerifiedAt) {
+      return ok;
+    }
+
+    if (!this.emailService.isSmtpConfigured()) {
       return ok;
     }
 
