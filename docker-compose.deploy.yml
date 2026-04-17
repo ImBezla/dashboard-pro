@@ -15,6 +15,8 @@ services:
     environment:
       NODE_ENV: production
       CI: "true"
+      # SQLite-VPS: verhindert Migrate-Hänger durch Advisory-Lock; bei Postgres in .env.deploy: PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=0
+      PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-1}"
       DATABASE_URL: ${DATABASE_URL:-file:/data/prod.db}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}
       FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL fehlt (öffentliche Web-URL, https://…)}
