@@ -1,7 +1,10 @@
+-- Consolidated initial migration (full schema). PRAGMA: Prisma diff orders some FKs before referenced tables; SQLite tolerates this with foreign_keys=OFF for the DDL block.
+PRAGMA foreign_keys=OFF;
 -- CreateTable
 CREATE TABLE "Organization" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
+    "kind" TEXT NOT NULL DEFAULT 'OPERATING',
     "joinCode" TEXT NOT NULL,
     "settings" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -9,15 +12,12 @@ CREATE TABLE "Organization" (
 );
 
 -- CreateTable
-CREATE TABLE "User" (
+CREATE TABLE "OpsWorkspaceState" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'MEMBER',
-    "avatar" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "organizationId" TEXT NOT NULL,
+    "payloadJson" TEXT NOT NULL,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "OpsWorkspaceState_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -28,6 +28,51 @@ CREATE TABLE "OrganizationMember" (
     "role" TEXT NOT NULL DEFAULT 'MEMBER',
     CONSTRAINT "OrganizationMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "OrganizationMember_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'MEMBER',
+    "avatar" TEXT,
+    "activeOrganizationId" TEXT,
+    "emailVerifiedAt" DATETIME,
+    "emailVerificationTokenHash" TEXT,
+    "emailVerificationExpiresAt" DATETIME,
+    "passwordResetTokenHash" TEXT,
+    "passwordResetExpiresAt" DATETIME,
+    "lastVerificationEmailSentAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "User_activeOrganizationId_fkey" FOREIGN KEY ("activeOrganizationId") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "UserNotificationPreferences" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "pushEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "emailEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "smsEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "phoneE164" TEXT,
+    "emailTaskAssigned" BOOLEAN NOT NULL DEFAULT true,
+    "emailTaskDue" BOOLEAN NOT NULL DEFAULT true,
+    "emailProjectUpdate" BOOLEAN NOT NULL DEFAULT true,
+    "emailMentions" BOOLEAN NOT NULL DEFAULT true,
+    "emailWeeklyDigest" BOOLEAN NOT NULL DEFAULT false,
+    "emailCalendarEvents" BOOLEAN NOT NULL DEFAULT true,
+    "smsTaskAssigned" BOOLEAN NOT NULL DEFAULT false,
+    "smsTaskDue" BOOLEAN NOT NULL DEFAULT false,
+    "smsCalendarEvents" BOOLEAN NOT NULL DEFAULT false,
+    "smsConsentAt" DATETIME,
+    "taskDueReminderDaysBefore" INTEGER NOT NULL DEFAULT 1,
+    "lastWeeklyDigestSentAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "UserNotificationPreferences_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -80,6 +125,7 @@ CREATE TABLE "Task" (
     "recurrenceInterval" INTEGER DEFAULT 1,
     "recurrenceEndDate" DATETIME,
     "parentTaskId" TEXT,
+    "lastDeadlineReminderSentAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Task_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
@@ -155,6 +201,19 @@ CREATE TABLE "ActivityLog" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "ActivityLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "ActivityLog_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "SecurityAuditLog" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "organizationId" TEXT,
+    "userId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "metadata" TEXT,
+    "ipAddress" TEXT,
+    CONSTRAINT "SecurityAuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "SecurityAuditLog_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -274,10 +333,16 @@ CREATE TABLE "FileAttachment" (
 CREATE UNIQUE INDEX "Organization_joinCode_key" ON "Organization"("joinCode");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "OpsWorkspaceState_organizationId_key" ON "OpsWorkspaceState"("organizationId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "OrganizationMember_userId_organizationId_key" ON "OrganizationMember"("userId", "organizationId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserNotificationPreferences_userId_key" ON "UserNotificationPreferences"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TeamMember_userId_teamId_key" ON "TeamMember"("userId", "teamId");
@@ -292,8 +357,15 @@ CREATE UNIQUE INDEX "TaskTag_taskId_tagId_key" ON "TaskTag"("taskId", "tagId");
 CREATE UNIQUE INDEX "ProjectTag_projectId_tagId_key" ON "ProjectTag"("projectId", "tagId");
 
 -- CreateIndex
+CREATE INDEX "SecurityAuditLog_organizationId_idx" ON "SecurityAuditLog"("organizationId");
+
+-- CreateIndex
+CREATE INDEX "SecurityAuditLog_createdAt_idx" ON "SecurityAuditLog"("createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Invoice_organizationId_invoiceNumber_key" ON "Invoice"("organizationId", "invoiceNumber");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PurchaseOrder_organizationId_orderNumber_key" ON "PurchaseOrder"("organizationId", "orderNumber");
 
+PRAGMA foreign_keys=ON;
