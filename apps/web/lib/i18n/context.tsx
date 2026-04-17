@@ -11,8 +11,9 @@ import {
 } from 'react';
 import type { AppLocale } from './types';
 import { getMessage } from './messages';
+import { DASHBOARD_PREFERENCES_KEY } from '@/lib/theme-document';
 
-const PREFERENCES_KEY = 'dashboardpro_preferences';
+const PREFERENCES_KEY = DASHBOARD_PREFERENCES_KEY;
 
 export const PREFERENCES_CHANGED_EVENT = 'dashboardpro-preferences-changed';
 

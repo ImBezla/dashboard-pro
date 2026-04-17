@@ -11,8 +11,12 @@ import { NAV_MODULE_LABEL_KEYS } from '@/lib/module-nav';
 import { WorkspaceModulePicker } from '@/components/workspace/WorkspaceModulePicker';
 import { SegmentedControl } from '@/components/ui/choice-controls';
 import { useTranslation, PREFERENCES_CHANGED_EVENT } from '@/lib/i18n/context';
+import {
+  applyDocumentTheme,
+  DASHBOARD_PREFERENCES_KEY,
+} from '@/lib/theme-document';
 
-const PREFERENCES_KEY = 'dashboardpro_preferences';
+const PREFERENCES_KEY = DASHBOARD_PREFERENCES_KEY;
 
 /** Hell: weiße Karte; Dark: gleiche Werte wie globales `.dark input` (dunkles Feld, helle Schrift). */
 const SETTINGS_TEXT_INPUT_CLASS =
@@ -55,18 +59,6 @@ function loadPreferences(): Preferences {
 function savePreferences(prefs: Preferences) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
-}
-
-function applyTheme(theme: 'light' | 'dark' | 'auto') {
-  if (typeof window === 'undefined') return;
-  const root = document.documentElement;
-
-  if (theme === 'auto') {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.classList.toggle('dark', prefersDark);
-  } else {
-    root.classList.toggle('dark', theme === 'dark');
-  }
 }
 
 function IconSun({ className }: { className?: string }) {
@@ -183,14 +175,14 @@ export default function SettingsPage() {
   useEffect(() => {
     const prefs = loadPreferences();
     setPreferences(prefs);
-    applyTheme(prefs.theme);
+    applyDocumentTheme(prefs.theme);
 
     // Listen for system theme changes when auto is selected
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
       const prefs = loadPreferences();
       if (prefs.theme === 'auto') {
-        applyTheme('auto');
+        applyDocumentTheme('auto');
       }
     };
     mediaQuery.addEventListener('change', handleChange);
@@ -213,7 +205,7 @@ export default function SettingsPage() {
     savePreferences(updated);
     
     if (newPrefs.theme !== undefined) {
-      applyTheme(updated.theme);
+      applyDocumentTheme(updated.theme);
     }
 
     if (typeof window !== 'undefined') {

@@ -19,6 +19,29 @@
   --text: #1e293b;
   --text-light: #475569;
   --bg-card: #ffffff;
+  /* Native Formulare (Safari/Chrome) im Hellmodus nicht „System Dark“ */
+  color-scheme: light;
+}
+
+/*
+ * Hellmodus: einheitliche Eingaben (Tailwind-Klassen können darüber noch feinjustieren).
+ */
+html:not(.dark) input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+html:not(.dark) select,
+html:not(.dark) textarea {
+  background-color: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: var(--text-light);
+}
+
+html:not(.dark) select {
+  /* Native Dropdown-Pfeil / Rahmen näher an unserem UI */
+  color-scheme: light;
 }
 
 /*
@@ -92,6 +115,21 @@
 .dark input::placeholder,
 .dark textarea::placeholder {
   color: #8fa1b8;
+}
+
+.dark select {
+  color-scheme: dark;
+}
+
+/* Aufklappbare <option>-Liste: wo der Browser es unterstützt */
+option {
+  background-color: var(--bg-card);
+  color: var(--text);
+}
+
+.dark option {
+  background-color: var(--surface-2, #121a28);
+  color: var(--text);
 }
 
 /* Textauswahl: klar, neutral-bläulich wie in Safari / System-Apps */

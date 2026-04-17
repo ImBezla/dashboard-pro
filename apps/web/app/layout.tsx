@@ -138,7 +138,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   viewportFit: 'cover',
-  colorScheme: 'light dark',
+  /* Kein `colorScheme: light dark` — sonst können native Felder der System-Dunkelheit folgen, obwohl die App hell ist. Steuerung über `html.dark` + globals.css. */
 };
 
 export default function RootLayout({

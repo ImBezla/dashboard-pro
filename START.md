@@ -53,7 +53,7 @@ cd "/Users/valentinoeder/Library/Mobile Documents/com~apple~CloudDocs/dashboardp
 
 # .env Datei erstellen
 cat > .env << 'EOF'
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="file:./dev.db"
 JWT_SECRET="your-secret-key-change-in-production"
 PORT=3002
 FRONTEND_URL="http://localhost:8000"

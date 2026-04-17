@@ -4,6 +4,25 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
+import {
+  SegmentedControl,
+  type SegmentedOption,
+} from '@/components/ui/choice-controls';
+
+type OrgKind = 'OPERATING' | 'HOLDING' | 'FAMILY_OFFICE' | 'AG';
+
+const ORG_KIND_OPTIONS: SegmentedOption<OrgKind>[] = [
+  {
+    value: 'OPERATING',
+    label: 'Operatives Unternehmen / GmbH & Co.',
+  },
+  { value: 'AG', label: 'AG / börsennotiert' },
+  { value: 'HOLDING', label: 'Holding / Dachgesellschaft' },
+  {
+    value: 'FAMILY_OFFICE',
+    label: 'Family Office / Vermögensverwaltung',
+  },
+];
 
 function SetupWorkspaceInner() {
   const router = useRouter();
@@ -20,9 +39,7 @@ function SetupWorkspaceInner() {
     modeParam === 'join' || codeFromUrl ? 'join' : 'create',
   );
   const [companyName, setCompanyName] = useState('');
-  const [orgKind, setOrgKind] = useState<
-    'OPERATING' | 'HOLDING' | 'FAMILY_OFFICE' | 'AG'
-  >('OPERATING');
+  const [orgKind, setOrgKind] = useState<OrgKind>('OPERATING');
   const [joinCode, setJoinCode] = useState(
     codeFromUrl ? codeFromUrl.toUpperCase() : '',
   );
@@ -161,32 +178,18 @@ function SetupWorkspaceInner() {
               />
             </div>
             <div>
-              <label
-                htmlFor="setup-org-kind"
-                className="block text-sm font-medium text-text mb-1"
-              >
+              <span className="mb-2 block text-sm font-medium text-text">
                 Struktur / Mandat
-              </label>
-              <select
-                id="setup-org-kind"
+              </span>
+              <SegmentedControl<OrgKind>
+                aria-label="Struktur / Mandat"
+                layout="vertical"
+                className="w-full"
                 value={orgKind}
-                onChange={(e) =>
-                  setOrgKind(
-                    e.target.value as
-                      | 'OPERATING'
-                      | 'HOLDING'
-                      | 'FAMILY_OFFICE'
-                      | 'AG',
-                  )
-                }
-                className="w-full min-h-[44px] px-4 py-2 border border-border rounded-lg bg-white text-text focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
-              >
-                <option value="OPERATING">Operatives Unternehmen / GmbH &amp; Co.</option>
-                <option value="AG">AG / börsennotiert</option>
-                <option value="HOLDING">Holding / Dachgesellschaft</option>
-                <option value="FAMILY_OFFICE">Family Office / Vermögensverwaltung</option>
-              </select>
-              <p className="mt-1.5 text-xs text-text-light leading-relaxed">
+                onChange={setOrgKind}
+                options={ORG_KIND_OPTIONS}
+              />
+              <p className="mt-2 text-xs leading-relaxed text-text-light">
                 Dient der Einordnung im Workspace; du kannst mehrere Mandanten parallel führen.
               </p>
             </div>

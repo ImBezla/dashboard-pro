@@ -35,12 +35,14 @@ export class EmailService {
   }
 
   private buildTransporter(): nodemailer.Transporter | null {
-    const smtpHost = process.env.SMTP_HOST;
-    const smtpUser = process.env.SMTP_USER;
+    const smtpHost = process.env.SMTP_HOST?.trim();
+    const smtpUser = process.env.SMTP_USER?.trim();
     const smtpPass = this.normalizeSmtpPass(
       process.env.SMTP_PASS ?? process.env.GMAIL_APP_PASSWORD,
     );
-    const gmailPass = this.normalizeSmtpPass(process.env.GMAIL_APP_PASSWORD);
+    const gmailAppPass = this.normalizeSmtpPass(
+      process.env.GMAIL_APP_PASSWORD,
+    );
 
     if (smtpHost && smtpUser && smtpPass) {
       return nodemailer.createTransport({
@@ -51,10 +53,20 @@ export class EmailService {
       });
     }
 
-    if (smtpUser && gmailPass) {
+    // Gmail / Google-Mail ohne eigenen SMTP_HOST: App-Passwort oft in SMTP_PASS *oder* GMAIL_APP_PASSWORD
+    const passForGmail = gmailAppPass ?? (!smtpHost ? smtpPass : undefined);
+    const useGmailService =
+      !!smtpUser &&
+      !!passForGmail &&
+      !smtpHost &&
+      (!!gmailAppPass ||
+        smtpUser.toLowerCase().includes('@gmail.com') ||
+        smtpUser.toLowerCase().includes('@googlemail.com'));
+
+    if (useGmailService) {
       return nodemailer.createTransport({
         service: 'gmail',
-        auth: { user: smtpUser, pass: gmailPass },
+        auth: { user: smtpUser, pass: passForGmail },
       });
     }
 
@@ -105,12 +117,12 @@ export class EmailService {
           console.log(
             `   (Set SMTP_HOST/SMTP_USER/SMTP_PASS or SMTP_USER+GMAIL_APP_PASSWORD)`,
           );
-        } else {
-          console.warn(
-            '[email] SMTP nicht konfiguriert — transaktionale E-Mail wird nicht versendet (keine Empfängerdaten geloggt).',
-          );
+          return true;
         }
-        return true;
+        console.warn(
+          '[email] SMTP nicht konfiguriert — transaktionale E-Mail wird nicht versendet (keine Empfängerdaten geloggt).',
+        );
+        return false;
       }
 
       const mailOptions = {

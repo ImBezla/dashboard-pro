@@ -15,7 +15,7 @@ cd apps/api
 `.env` anlegen, mindestens:
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="file:./dev.db"
 JWT_SECRET="ein-langer-zufaelliger-string"
 PORT=3002
 FRONTEND_URL="http://localhost:8000"

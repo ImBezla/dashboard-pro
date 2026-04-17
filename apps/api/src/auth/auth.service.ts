@@ -8,6 +8,7 @@ import {
   forwardRef,
   HttpException,
   HttpStatus,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -115,11 +116,18 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendEmailVerificationEmail(
+    const sent = await this.emailService.sendEmailVerificationEmail(
       user.email,
       user.name,
       rawVerify,
     );
+
+    if (!sent) {
+      await this.prisma.user.delete({ where: { id: user.id } });
+      throw new ServiceUnavailableException(
+        'Die Bestätigungs-E-Mail konnte nicht versendet werden. Bitte prüfen Sie die SMTP-Einstellungen (SMTP_HOST, SMTP_USER, SMTP_PASS bzw. GMAIL_APP_PASSWORD) oder versuchen Sie es später erneut.',
+      );
+    }
 
     return {
       message:
@@ -201,11 +209,17 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendEmailVerificationEmail(
+    const sent = await this.emailService.sendEmailVerificationEmail(
       user.email,
       user.name,
       rawVerify,
     );
+
+    if (!sent) {
+      throw new ServiceUnavailableException(
+        'Die Bestätigungs-E-Mail konnte nicht versendet werden. Bitte prüfen Sie die SMTP-Einstellungen oder versuchen Sie es später erneut.',
+      );
+    }
 
     return generic;
   }
@@ -271,7 +285,24 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendPasswordResetEmail(user.email, user.name, raw);
+    const sent = await this.emailService.sendPasswordResetEmail(
+      user.email,
+      user.name,
+      raw,
+    );
+
+    if (!sent) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetTokenHash: null,
+          passwordResetExpiresAt: null,
+        },
+      });
+      throw new ServiceUnavailableException(
+        'Die E-Mail zum Zurücksetzen des Passworts konnte nicht versendet werden. Bitte prüfen Sie die SMTP-Einstellungen oder versuchen Sie es später erneut.',
+      );
+    }
 
     return ok;
   }

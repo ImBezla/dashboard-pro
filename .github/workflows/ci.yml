@@ -23,12 +23,12 @@ jobs:
       - name: Apply Prisma migrations (SQLite)
         run: cd apps/api && npx prisma migrate deploy
         env:
-          DATABASE_URL: 'file:./prisma/dev.db'
+          DATABASE_URL: 'file:./dev.db'
 
       - name: Prisma generate
         run: npm run prisma:generate --workspace=@dashboardpro/api
         env:
-          DATABASE_URL: 'file:./prisma/dev.db'
+          DATABASE_URL: 'file:./dev.db'
 
       - name: Lint
         run: npm run lint
