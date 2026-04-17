@@ -4,6 +4,10 @@ import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
 import { API_BASE_URL } from '@/lib/api-base-url';
+import {
+  apiUnreachableUserMessage,
+  isBrowserNetworkErrorMessage,
+} from '@/lib/browser-network-error';
 
 const API_URL = API_BASE_URL;
 
@@ -31,7 +35,10 @@ export default function ForgotPasswordPage() {
       }
       setSent(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Anfrage fehlgeschlagen');
+      const msg = err instanceof Error ? err.message : 'Anfrage fehlgeschlagen';
+      setError(
+        isBrowserNetworkErrorMessage(msg) ? apiUnreachableUserMessage(API_URL) : msg,
+      );
     } finally {
       setLoading(false);
     }

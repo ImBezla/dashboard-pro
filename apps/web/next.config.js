@@ -9,11 +9,8 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: process.env.SKIP_NEXT_LINT === '1',
   },
-  /** Weniger RAM beim Build (Docker auf kleinem VPS); Typcheck: CI / lokal ohne DOCKER_LOW_MEM. */
-  typescript: {
-    ignoreBuildErrors: dockerLowMem,
-  },
-  productionBrowserSourceMaps: dockerLowMem ? false : undefined,
+  /** Keine Browser-Sourcemaps in Produktion (weniger Code-Leakage). */
+  productionBrowserSourceMaps: false,
   /** Schlanke Production-Images & korrektes File-Tracing im npm-Workspace. */
   output: 'standalone',
   experimental: {

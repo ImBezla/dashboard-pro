@@ -98,12 +98,18 @@ export class EmailService {
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
       if (!this.isConfigured()) {
-        console.log('📧 [DEV MODE] Email would be sent:');
-        console.log(`   To: ${options.to}`);
-        console.log(`   Subject: ${options.subject}`);
-        console.log(
-          `   (Set SMTP_HOST/SMTP_USER/SMTP_PASS or SMTP_USER+GMAIL_APP_PASSWORD)`,
-        );
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('📧 [DEV MODE] Email would be sent:');
+          console.log(`   To: ${options.to}`);
+          console.log(`   Subject: ${options.subject}`);
+          console.log(
+            `   (Set SMTP_HOST/SMTP_USER/SMTP_PASS or SMTP_USER+GMAIL_APP_PASSWORD)`,
+          );
+        } else {
+          console.warn(
+            '[email] SMTP nicht konfiguriert — transaktionale E-Mail wird nicht versendet (keine Empfängerdaten geloggt).',
+          );
+        }
         return true;
       }
 

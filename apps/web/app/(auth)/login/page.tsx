@@ -4,6 +4,10 @@ import { useState, FormEvent, useEffect } from 'react';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
 import { API_BASE_URL } from '@/lib/api-base-url';
+import {
+  apiUnreachableUserMessage,
+  isBrowserNetworkErrorMessage,
+} from '@/lib/browser-network-error';
 
 const API_URL = API_BASE_URL;
 
@@ -106,12 +110,8 @@ export default function LoginPage() {
       const message = err instanceof Error ? err.message : 'Login fehlgeschlagen';
       let errorMessage = 'Login fehlgeschlagen';
 
-      if (
-        message.includes('Failed to fetch') ||
-        message.includes('NetworkError')
-      ) {
-        errorMessage =
-          'Keine Verbindung zum Server. Bitte prüfen Sie, ob das Backend auf Port 3002 läuft.';
+      if (isBrowserNetworkErrorMessage(message)) {
+        errorMessage = apiUnreachableUserMessage(API_URL);
       } else {
         errorMessage = message || 'Fehler beim Senden der Anfrage';
       }

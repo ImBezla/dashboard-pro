@@ -5,6 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
 import { API_BASE_URL } from '@/lib/api-base-url';
+import {
+  apiUnreachableUserMessage,
+  isBrowserNetworkErrorMessage,
+} from '@/lib/browser-network-error';
 
 const API_URL = API_BASE_URL;
 
@@ -50,7 +54,10 @@ function ResetPasswordForm() {
       }
       setDone(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Zurücksetzen fehlgeschlagen');
+      const msg = err instanceof Error ? err.message : 'Zurücksetzen fehlgeschlagen';
+      setError(
+        isBrowserNetworkErrorMessage(msg) ? apiUnreachableUserMessage(API_URL) : msg,
+      );
     } finally {
       setLoading(false);
     }

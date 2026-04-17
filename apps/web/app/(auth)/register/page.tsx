@@ -6,6 +6,10 @@ import { useAuthStore, type AuthUser } from '@/lib/store';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
 import { API_BASE_URL } from '@/lib/api-base-url';
+import {
+  apiUnreachableUserMessage,
+  isBrowserNetworkErrorMessage,
+} from '@/lib/browser-network-error';
 
 const API_URL = API_BASE_URL;
 
@@ -122,13 +126,8 @@ export default function RegisterPage() {
       setError('Unerwartete Antwort vom Server');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Registrierung fehlgeschlagen';
-      if (
-        message.includes('Failed to fetch') ||
-        message.includes('NetworkError')
-      ) {
-        setError(
-          `Keine Verbindung zur API (${API_URL}). Läuft das Backend auf Port 3002?`,
-        );
+      if (isBrowserNetworkErrorMessage(message)) {
+        setError(apiUnreachableUserMessage(API_URL));
       } else {
         setError(message);
       }
