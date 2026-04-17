@@ -14,6 +14,7 @@ services:
       - "${API_PUBLISH_BIND:-127.0.0.1}:${API_PUBLISH_PORT:-3002}:3002"
     environment:
       NODE_ENV: production
+      CI: "true"
       DATABASE_URL: ${DATABASE_URL:-file:/data/prod.db}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}
       FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL fehlt (öffentliche Web-URL, https://…)}
@@ -43,7 +44,7 @@ services:
       interval: 20s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 120s
 
   web:
     build:

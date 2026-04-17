@@ -17,8 +17,7 @@ RUN npm run prisma:generate --workspace=@dashboardpro/api \
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
-RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/* \
-  && npm install -g prisma@5.7.1
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 COPY package.json package-lock.json turbo.json ./
 COPY apps/api/package.json apps/api/

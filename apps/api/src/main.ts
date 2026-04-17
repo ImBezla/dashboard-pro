@@ -99,8 +99,13 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT || 3002;
-  await app.listen(port);
+  const port = Number(process.env.PORT) || 3002;
+  // In Docker muss auf 0.0.0.0 gebunden werden, sonst kann 127.0.0.1:PORT im Container (Healthcheck / curl) leer sein.
+  if (isProd) {
+    await app.listen(port, '0.0.0.0');
+  } else {
+    await app.listen(port);
+  }
   console.log(`🚀 API Server running on http://localhost:${port}`);
 
   if (isProd) {
