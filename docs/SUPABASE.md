@@ -29,6 +29,15 @@ DATABASE_URL=postgresql://postgres:[DEIN-PASSWORT]@db.[DEIN-REF].supabase.co:543
 - Container neu bauen/starten: `docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build`  
   Beim Start läuft **`prisma migrate deploy`** und legt Tabellen in Supabase an.
 
+### Schema einmalig von deinem Rechner gegen Supabase
+
+Wenn du die Tabellen **vor** dem ersten Container-Start oder separat anlegen willst (nur `DATABASE_URL` in der Shell, nicht in Git):
+
+```bash
+export DATABASE_URL='postgresql://postgres:…@db….supabase.co:5432/postgres?sslmode=require'
+bash scripts/supabase-migrate-deploy.sh
+```
+
 ## Bestehende SQLite-Daten
 
 Die alte **SQLite**-Datei wird **nicht** automatisch importiert. Optionen:

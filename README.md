@@ -70,14 +70,16 @@ cd apps/web
 Ausführliche Schritte, Umgebungsvariablen und Postgres-Hinweise: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.  
 **Hostinger + Domain (z. B. dashboardpro.de):** **[docs/DEPLOYMENT-HOSTINGER.md](docs/DEPLOYMENT-HOSTINGER.md)** · **nginx-Beispiel + Kurzablauf:** **[deploy/hostinger/](deploy/hostinger/)**.  
 **Erster Launch / geschlossene Beta:** **[docs/BETA-LAUNCH.md](docs/BETA-LAUNCH.md)**.  
-**Go-Live-Checkliste („alles“):** **[docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md)** · Env prüfen: `npm run deploy:verify`.
+**Go-Live-Checkliste („alles“):** **[docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md)** · Env prüfen: `npm run deploy:verify`.  
+**VPS-Schrittfolge anzeigen:** `npm run deploy:vps` (mit `.env.deploy`: `npm run deploy:vps:verify`).
 
 Kurz:
 
 ```bash
 cp .env.deploy.example .env.deploy
-# .env.deploy ausfüllen (JWT_SECRET, FRONTEND_URL, NEXT_PUBLIC_*)
+# .env.deploy ausfüllen (JWT_SECRET, FRONTEND_URL, NEXT_PUBLIC_*, DATABASE_URL / Supabase)
 
+npm run deploy:verify
 npm run docker:deploy:up
 ```
 

@@ -34,8 +34,9 @@ Dashboard Pro — Deploy-Bundle (dist/deploy)
 
 Auf dem Server (VPS):
   1. Diesen Ordner nach z. B. /var/www/dashboardpro kopieren (oder ZIP entpacken).
-  2. cp .env.deploy.example .env.deploy && Editor: JWT_SECRET, FRONTEND_URL, NEXT_PUBLIC_*, DATABASE_URL
-  3. docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build
+  2. cp .env.deploy.example .env.deploy && Editor: JWT_SECRET, FRONTEND_URL, NEXT_PUBLIC_*, DATABASE_URL (Supabase → docs/SUPABASE.md)
+  3. npm run deploy:verify   (optional, prüft .env.deploy)
+  4. docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build
 
 Kein public_html — Hostinger VPS: deploy/hostinger/README.md, full-go-live.sh, docs/GO-LIVE-CHECKLIST.md
 EOF
