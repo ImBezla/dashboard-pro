@@ -16,9 +16,10 @@ services:
       CI: "true"
       # Postgres/Supabase: Advisory-Lock für migrate deploy aktiv (Standard 0).
       PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-0}"
-      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL fehlt (PostgreSQL; Docker/VPS: Supabase Session Pooler — docs/SUPABASE.md)}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}
-      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL fehlt (öffentliche Web-URL, https://…)}
+      # Hinweistext ohne ":" in der Klammer — sonst bricht YAML ("mapping values are not allowed").
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL fehlt in .env.deploy siehe docs/SUPABASE.md}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}"
+      FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL fehlt in .env.deploy (https-URL der Web-App)}"
       # Optional: zweite kanonische Web-URL (z. B. www vs. Apex) für CORS — siehe apps/api/src/main.ts
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
       ADDITIONAL_CORS_ORIGINS: ${ADDITIONAL_CORS_ORIGINS:-}
@@ -55,14 +56,14 @@ services:
       context: .
       dockerfile: docker/Dockerfile.web
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL fehlt (Browser → API, z. B. https://api.example.com)}
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL fehlt (öffentliche Web-URL)}
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL fehlt in .env.deploy}"
+        NEXT_PUBLIC_SITE_URL: "${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL fehlt in .env.deploy}"
     ports:
       - "${WEB_PUBLISH_BIND:-127.0.0.1}:${WEB_PUBLISH_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       PORT: "3000"
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt (muss mit API übereinstimmen)}
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy muss mit API übereinstimmen}"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     healthcheck:
