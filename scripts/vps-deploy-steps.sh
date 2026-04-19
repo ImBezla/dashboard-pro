@@ -41,8 +41,9 @@ Voraussetzungen auf dem VPS
      → dist/deploy/ per scp/rsync auf den VPS, dann dort cd …
 
 2) Umgebung (.env.deploy — nicht ins Git committen)
-     Lokal am Mac: .env.deploy pflegen, dann ERST NACH Schritt 1 hochladen:
+     Lokal am Mac: .env.deploy pflegen, dann ERST NACH Schritt 1 hochladen.
 
+     scp NUR vom Mac aus (nicht auf dem VPS — dort gibt es keinen /Users/…-Pfad):
      scp .env.deploy root@72.61.95.246:/root/dashboardpro/.env.deploy
 
      (Wenn der Klon woanders liegt: Zielpfad anpassen, auf dem VPS finden mit:
@@ -56,11 +57,22 @@ Voraussetzungen auf dem VPS
        DATABASE_URL        (Supabase Direct URI — docs/SUPABASE.md)
        E-Mail: SMTP_* oder SMTP_USER + GMAIL_APP_PASSWORD
 
-3) Prüfen (im Repo-Root, mit ausgefüllter .env.deploy)
+3) Prüfen (im Repo-Root auf dem VPS, .env.deploy muss liegen)
+
+  Mit npm (falls Node auf dem VPS installiert ist):
      npm run deploy:verify
 
-4) Container bauen & starten
+  Ohne npm (reicht — nur bash):
+     bash scripts/verify-env-deploy.sh .env.deploy
+
+4) Container bauen & starten (im Repo-Root auf dem VPS)
+
+  Mit npm:
      npm run docker:deploy:up
+
+  Ohne npm (Standard auf bare Ubuntu-VPS):
+     docker compose --env-file .env.deploy -f docker-compose.deploy.yml build
+     docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d
 
 5) Healthchecks (auf dem VPS, Standard: nur 127.0.0.1)
      curl -sS http://127.0.0.1:3002/health
