@@ -6,6 +6,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+VPS_HOST="${VPS_HOST:-DEINE_VPS_IP}"
 
 cat <<'EOF'
 === DashboardPro — VPS hochladen / live schalten ===
@@ -21,14 +22,16 @@ Voraussetzungen auf dem VPS
 
 1) Code auf den Server — ZUERST (sonst schlägt scp fehl: „No such file or directory“)
 
+  Platzhalter DEINE_VPS_IP durch die IPv4 des VPS ersetzen (oder vor dem Skript: export VPS_HOST=1.2.3.4).
+
   Vom Mac aus, einmalig (klont nach /root/dashboardpro auf dem VPS):
-    ssh root@72.61.95.246 "git clone https://github.com/ImBezla/dashboard-pro.git dashboardpro && ls -la dashboardpro/docker-compose.deploy.yml"
+    ssh root@DEINE_VPS_IP "git clone https://github.com/ImBezla/dashboard-pro.git dashboardpro && ls -la dashboardpro/docker-compose.deploy.yml"
 
   Wenn der Ordner schon existiert:
-    ssh root@72.61.95.246 "cd dashboardpro && git pull"
+    ssh root@DEINE_VPS_IP "cd dashboardpro && git pull"
 
   Oder interaktiv auf dem VPS:
-    ssh root@72.61.95.246
+    ssh root@DEINE_VPS_IP
     cd /root
     git clone https://github.com/ImBezla/dashboard-pro.git dashboardpro
     cd dashboardpro && git checkout main && git pull
@@ -44,10 +47,10 @@ Voraussetzungen auf dem VPS
      Lokal am Mac: .env.deploy pflegen, dann ERST NACH Schritt 1 hochladen.
 
      scp NUR vom Mac aus (nicht auf dem VPS — dort gibt es keinen /Users/…-Pfad):
-     scp .env.deploy root@72.61.95.246:/root/dashboardpro/.env.deploy
+     scp .env.deploy root@DEINE_VPS_IP:/root/dashboardpro/.env.deploy
 
      (Wenn der Klon woanders liegt: Zielpfad anpassen, auf dem VPS finden mit:
-      ssh root@72.61.95.246 "find /root /home -maxdepth 5 -name docker-compose.deploy.yml 2>/dev/null")
+      ssh root@DEINE_VPS_IP "find /root /home -maxdepth 5 -name docker-compose.deploy.yml 2>/dev/null")
 
      Variablen in .env.deploy u. a.:
        JWT_SECRET          (stark, z. B. openssl rand -base64 48)
@@ -87,8 +90,9 @@ EOF
 
 echo ""
 echo "→ Nur wenn Schritt 1 (clone) auf dem VPS schon geklappt hat — .env.deploy hochladen:"
+echo "  (Tipp: export VPS_HOST=1.2.3.4 — dann wird unten deine IP eingesetzt.)"
 if [[ -f "$ROOT/.env.deploy" ]]; then
-  echo "  scp \"$ROOT/.env.deploy\" root@72.61.95.246:/root/dashboardpro/.env.deploy"
+  echo "  scp \"$ROOT/.env.deploy\" root@${VPS_HOST}:/root/dashboardpro/.env.deploy"
 else
   echo "  (noch keine .env.deploy hier — zuerst lokal anlegen, dann erneut npm run deploy:vps)"
 fi

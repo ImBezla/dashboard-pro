@@ -61,4 +61,28 @@ warn_https FRONTEND_URL
 warn_https NEXT_PUBLIC_API_URL
 warn_https NEXT_PUBLIC_SITE_URL
 
+fe="$(value_of FRONTEND_URL)"
+apiu="$(value_of NEXT_PUBLIC_API_URL)"
+if [[ "$fe" == https://* ]] && [[ "$apiu" == http://* ]]; then
+  if [[ "$apiu" != http://localhost* && "$apiu" != http://127.0.0.1* ]]; then
+    echo "Hinweis: FRONTEND_URL ist https, NEXT_PUBLIC_API_URL ist http (außer localhost) — Browser blockiert oft Mixed Content. API-URL auf https:// setzen." >&2
+  fi
+fi
+
+skip_ev="$(value_of SKIP_EMAIL_VERIFICATION | tr '[:upper:]' '[:lower:]')"
+if [[ "$skip_ev" != "true" ]]; then
+  has_smtp_host=false
+  has_gmail=false
+  grep -qE '^[[:space:]]*SMTP_HOST=[^[:space:]]' "$ENV_FILE" && has_smtp_host=true
+  if grep -qE '^[[:space:]]*SMTP_USER=[^[:space:]]' "$ENV_FILE"; then
+    if grep -qE '^[[:space:]]*GMAIL_APP_PASSWORD=[^[:space:]]' "$ENV_FILE" ||
+      grep -qE '^[[:space:]]*SMTP_PASS=[^[:space:]]' "$ENV_FILE"; then
+      has_gmail=true
+    fi
+  fi
+  if [[ "$has_smtp_host" != "true" && "$has_gmail" != "true" ]]; then
+    echo "Hinweis: Weder SMTP_HOST noch (SMTP_USER + GMAIL_APP_PASSWORD/SMTP_PASS) gesetzt — Registrierung/E-Mail bricht ohne SKIP_EMAIL_VERIFICATION=true ab." >&2
+  fi
+fi
+
 echo "→ .env.deploy OK: $ENV_FILE"

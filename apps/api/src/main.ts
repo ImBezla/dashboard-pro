@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/http-exception.filter';
+import { PrismaService } from './prisma/prisma.service';
 
 function normalizeOrigin(url: string): string {
   return url.trim().replace(/\/$/, '');
@@ -105,6 +106,20 @@ async function bootstrap() {
       disableErrorMessages: isProd,
     }),
   );
+
+  await app.init();
+  const prisma = app.get(PrismaService);
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('[api] PostgreSQL erreichbar (Start-Check).');
+  } catch (err) {
+    console.error(
+      '[api] PostgreSQL nicht erreichbar — DATABASE_URL / Netzwerk / Firewall prüfen (Docker z. B. Session Pooler siehe docs/SUPABASE.md).',
+      err,
+    );
+    await app.close();
+    process.exit(1);
+  }
 
   const port = Number(process.env.PORT) || 3002;
   // In Docker muss auf 0.0.0.0 gebunden werden, sonst kann 127.0.0.1:PORT im Container (Healthcheck / curl) leer sein.
