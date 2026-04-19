@@ -8,6 +8,22 @@ on:
 jobs:
   lint-test-build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dashboardpro
+          POSTGRES_PASSWORD: dashboardpro
+          POSTGRES_DB: dashboardpro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dashboardpro -d dashboardpro"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dashboardpro:dashboardpro@127.0.0.1:5432/dashboardpro?schema=public
     steps:
       - uses: actions/checkout@v4
 
@@ -20,15 +36,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Apply Prisma migrations (SQLite)
+      - name: Apply Prisma migrations (PostgreSQL)
         run: cd apps/api && npx prisma migrate deploy
-        env:
-          DATABASE_URL: 'file:./dev.db'
 
       - name: Prisma generate
         run: npm run prisma:generate --workspace=@dashboardpro/api
-        env:
-          DATABASE_URL: 'file:./dev.db'
 
       - name: Lint
         run: npm run lint

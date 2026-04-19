@@ -41,7 +41,7 @@ npm install
 cd apps/api
 
 # .env anlegen (DATABASE_URL, JWT_SECRET, PORT, FRONTEND_URL)
-# Bei Standard-Setup: SQLite, z. B. DATABASE_URL="file:./dev.db" (relativ zu apps/api/prisma/)
+# Postgres lokal: repo-root `docker compose up -d`, dann DATABASE_URL wie in apps/api/.env.example
 #
 # Optional — E-Mail (Nodemailer): SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
 # SMTP_FROM, SMTP_SECURE (z. B. true bei Port 465).

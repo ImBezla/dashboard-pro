@@ -1,8 +1,7 @@
-# Optional: Postgres für lokale/staging-nahe Umgebung (Produktion: managed DB).
+# Postgres für lokale Entwicklung (Produktion: z. B. Supabase — siehe docs/SUPABASE.md).
 # Start: docker compose up -d
 # DATABASE_URL in apps/api/.env z. B.:
 #   postgresql://dashboardpro:dashboardpro@localhost:5432/dashboardpro?schema=public
-# Dann in schema.prisma provider auf "postgresql" umstellen und Migrationen neu erzeugen.
 
 services:
   postgres:

@@ -51,9 +51,11 @@ npm install
 ```bash
 cd "/Users/valentinoeder/Library/Mobile Documents/com~apple~CloudDocs/dashboardpro/apps/api"
 
+# Postgres im Repo-Root starten: docker compose up -d
+
 # .env Datei erstellen
 cat > .env << 'EOF'
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://dashboardpro:dashboardpro@localhost:5432/dashboardpro?schema=public"
 JWT_SECRET="your-secret-key-change-in-production"
 PORT=3002
 FRONTEND_URL="http://localhost:8000"
@@ -99,8 +101,7 @@ Zuerst über **Registrieren** ein Konto anlegen, danach einloggen.
 → Node.js ist nicht installiert (siehe oben)
 
 **"DATABASE_URL" Fehler**
-→ PostgreSQL muss installiert und laufend sein
-→ DATABASE_URL in `.env` anpassen
+→ Im Repo-Root `docker compose up -d` (Postgres), dann `DATABASE_URL` in `apps/api/.env` prüfen
 
 **Port bereits belegt**
 → Ändere die Ports in `package.json` oder `.env`

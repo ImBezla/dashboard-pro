@@ -92,12 +92,14 @@ FRONTEND_URL=https://dashboardpro.de
 NEXT_PUBLIC_SITE_URL=https://dashboardpro.de
 NEXT_PUBLIC_API_URL=https://api.dashboardpro.de
 
-DATABASE_URL=file:/data/prod.db
+# PostgreSQL (z. B. Supabase → Project Settings → Database → URI, Direct, Port 5432)
+DATABASE_URL=postgresql://postgres:[PASSWORT]@db.[REF].supabase.co:5432/postgres?sslmode=require
 ```
 
 - **`FRONTEND_URL`**: exakt die Origin der Web-App (CORS, E-Mail-Links) – hier ohne `www`, wenn nur die Apex-Domain genutzt wird; sonst konsistent zu dem, was Nutzer im Browser sehen.
 - **`NEXT_PUBLIC_API_URL`**: muss für **Browser** erreichbar sein → `https://api.dashboardpro.de`.
 - **`JWT_SECRET`**: identisch für **API-Container** und **Web-Container** (Next-Middleware).
+- **`DATABASE_URL`**: Details und Supabase → **[SUPABASE.md](./SUPABASE.md)**.
 
 Nach dem ersten `docker compose … up --build` sind die `NEXT_PUBLIC_*`-Werte im Web-Image **eingebacken**. Änderst du die URLs, **Web-Image neu bauen**.
 

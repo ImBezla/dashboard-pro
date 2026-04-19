@@ -52,7 +52,7 @@ Oder **einzeln**: [deploy/hostinger/README.md](../deploy/hostinger/README.md) (`
 
 ## 8. Betrieb
 
-- [ ] **Backup** der SQLite-Datei im Docker-Volume (`/data/prod.db` im API-Container) oder Snapshot des VPS  
+- [ ] **Backup** der Datenbank (Supabase: Dashboard / Point-in-Time; zusätzlich VPS-Snapshot sinnvoll)  
 - [ ] Rechtstexte / Impressum für euren Fall final (siehe [BETA-LAUNCH.md](./BETA-LAUNCH.md))  
 
 ## Referenz

@@ -1,8 +1,7 @@
 # Produktions-Stack (API + Web). Kopieren: cp .env.deploy.example .env.deploy && Editor
 # Start: docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build
 #
-# Hinweis: API nutzt SQLite auf Volume (einfacher Einstieg). Für Skalierung → Postgres
-# (schema provider + DATABASE_URL anpassen, siehe docs/DEPLOYMENT.md).
+# Hinweis: API nutzt PostgreSQL (z. B. Supabase). DATABASE_URL in .env.deploy setzen (siehe docs/SUPABASE.md).
 
 services:
   api:
@@ -15,9 +14,9 @@ services:
     environment:
       NODE_ENV: production
       CI: "true"
-      # SQLite-VPS: verhindert Migrate-Hänger durch Advisory-Lock; bei Postgres in .env.deploy: PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=0
-      PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-1}"
-      DATABASE_URL: ${DATABASE_URL:-file:/data/prod.db}
+      # Postgres/Supabase: Advisory-Lock für migrate deploy aktiv (Standard 0).
+      PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-0}"
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL fehlt (PostgreSQL, z. B. Supabase Direct URI)}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}
       FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL fehlt (öffentliche Web-URL, https://…)}
       # Optional: zweite kanonische Web-URL (z. B. www vs. Apex) für CORS — siehe apps/api/src/main.ts
@@ -37,6 +36,7 @@ services:
       TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
       # Ohne SMTP: true = sofort Login nach Registrierung (nur intern/testen).
       SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-false}
+    # Optional: persistenter Speicher (z. B. später lokale Uploads unter /data); DB liegt bei Supabase.
     volumes:
       - dashboardpro_api_data:/data
     healthcheck:

@@ -8,6 +8,12 @@ npm install
 
 ## 2. Datenbank (API)
 
+Im **Repo-Root** Postgres starten (siehe `docker-compose.yml`):
+
+```bash
+docker compose up -d
+```
+
 ```bash
 cd apps/api
 ```
@@ -15,7 +21,7 @@ cd apps/api
 `.env` anlegen, mindestens:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://dashboardpro:dashboardpro@localhost:5432/dashboardpro?schema=public"
 JWT_SECRET="ein-langer-zufaelliger-string"
 PORT=3002
 FRONTEND_URL="http://localhost:8000"

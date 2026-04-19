@@ -3,7 +3,8 @@ import * as bcrypt from 'bcrypt';
 
 // Set DATABASE_URL if not set
 if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'file:./dev.db';
+  process.env.DATABASE_URL =
+    'postgresql://dashboardpro:dashboardpro@localhost:5432/dashboardpro?schema=public';
 }
 
 const prisma = new PrismaClient();

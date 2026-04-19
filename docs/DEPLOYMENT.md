@@ -12,7 +12,7 @@
 3. **`NEXT_PUBLIC_API_URL`** (Web-Build): URL der API **vom Browser** aus (kein interner Docker-Hostname, wenn Nutzer draußen sind).
 4. **`NEXT_PUBLIC_SITE_URL`**: kanonische Web-URL (SEO, OG).
 5. **E-Mail**: `SMTP_*` setzen; **`SKIP_EMAIL_VERIFICATION`** in Produktion **nicht** setzen.
-6. **Datenbank**: Standard im Compose ist **SQLite auf Volume** (`DATABASE_URL=file:/data/prod.db`). Für mehrere API-Instanzen oder HA → **PostgreSQL** (siehe unten).
+6. **Datenbank**: **PostgreSQL** (`DATABASE_URL`, z. B. Supabase — **[SUPABASE.md](./SUPABASE.md)**).
 7. **Prisma**: beim API-Start läuft automatisch **`prisma migrate deploy`** (siehe `docker/entrypoint-api.sh`).
 8. **TLS**: in Produktion TLS am **Reverse Proxy** (Caddy, Traefik, nginx) terminieren.
 
@@ -20,7 +20,7 @@
 
 ```bash
 cp .env.deploy.example .env.deploy
-# .env.deploy bearbeiten: JWT_SECRET, URLs, ggf. SMTP
+# .env.deploy bearbeiten: JWT_SECRET, URLs, DATABASE_URL (Supabase → docs/SUPABASE.md), ggf. SMTP
 
 docker compose --env-file .env.deploy -f docker-compose.deploy.yml build
 docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d
@@ -77,18 +77,15 @@ PORT=3000 npm start
 
 `JWT_SECRET` zur Laufzeit setzen (wie in `.env.example` der Web-App).
 
-## PostgreSQL statt SQLite
+## PostgreSQL / Supabase
 
-1. Postgres starten (z. B. Repo-`docker-compose.yml` nur `postgres`-Service, oder Managed DB).
-2. In `apps/api/prisma/schema.prisma` den **`provider`** auf `postgresql` stellen und **Migrationen** für Postgres erzeugen bzw. von einer Referenz-DB migrieren (einmaliger Schritt – mit Team abstimmen).
-3. `DATABASE_URL=postgresql://…` setzen.
-4. `npx prisma migrate deploy` in der Pipeline / beim Start.
-
-Die mitgelieferten Compose-Dateien sind für **SQLite** ausgelegt; für Postgres **kein** `/data`-Volume für die DB-Datei nötig, dafür Netzwerk-Zugang zur Datenbank.
+1. Managed Postgres anlegen (z. B. Supabase) oder selbst hosten.
+2. `DATABASE_URL=postgresql://…` in `.env.deploy` bzw. `apps/api/.env` setzen (Details: **[SUPABASE.md](./SUPABASE.md)**).
+3. `npx prisma migrate deploy` läuft beim API-Container-Start bzw. in CI.
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`): `npm ci`, `prisma migrate deploy` (SQLite-Datei in CI), Lint, API-Tests, Turbo-Build, Playwright-Smoke. Für Deploy: z. B. nach `main` Images bauen und zu GHCR pushen – bei Bedarf ergänzen.
+GitHub Actions (`.github/workflows/ci.yml`): `npm ci`, **Postgres-Service**, `prisma migrate deploy`, Lint, API-Tests, Turbo-Build, Playwright-Smoke. Für Deploy: z. B. nach `main` Images bauen und zu GHCR pushen – bei Bedarf ergänzen.
 
 ## WebSocket
 

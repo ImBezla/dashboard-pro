@@ -28,6 +28,13 @@ check_nonempty JWT_SECRET
 check_nonempty FRONTEND_URL
 check_nonempty NEXT_PUBLIC_API_URL
 check_nonempty NEXT_PUBLIC_SITE_URL
+check_nonempty DATABASE_URL
+
+DB="$(value_of DATABASE_URL)"
+if [[ "$DB" != postgresql://* && "$DB" != postgres://* ]]; then
+  echo "DATABASE_URL muss mit postgresql:// oder postgres:// beginnen (Supabase Direct URI)." >&2
+  exit 1
+fi
 
 JWT="$(value_of JWT_SECRET)"
 if [[ ${#JWT} -lt 24 ]]; then

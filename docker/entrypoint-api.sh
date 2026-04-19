@@ -46,7 +46,7 @@ else
 
   if [ "$code" -eq 124 ]; then
     echo "[api-entrypoint] Fehler: prisma migrate deploy Timeout nach ${TO}s (evtl. DB-Lock, langsames Volume, blockiertes Netz)." >&2
-    echo "[api-entrypoint] Tipp: docker compose logs -f api; auf dem Host: lsof /var/lib/docker/volumes/…/prod.db" >&2
+    echo "[api-entrypoint] Tipp: docker compose logs -f api; DATABASE_URL / Netzwerk zur DB prüfen." >&2
     exit 124
   fi
   if [ "$code" -ne 0 ]; then
