@@ -92,7 +92,10 @@ export class UserController {
         'Bitte die Einwilligung zum SMS-Versand bestätigen (Feld acceptSmsConsent: true), um SMS zu aktivieren.',
       );
     }
-    if (dto.smsEnabled === true || (dto.smsEnabled === undefined && p.smsEnabled)) {
+    if (
+      dto.smsEnabled === true ||
+      (dto.smsEnabled === undefined && p.smsEnabled)
+    ) {
       const nextPhone =
         dto.phoneE164 !== undefined ? dto.phoneE164 : p.phoneE164;
       const anySmsTopic =

@@ -44,7 +44,9 @@ function additionalCorsFromEnv(): string[] {
 
 function buildCorsOrigins(): string[] {
   const set = new Set<string>([
-    ...expandPublicSiteOrigins(process.env.FRONTEND_URL || 'http://localhost:8000'),
+    ...expandPublicSiteOrigins(
+      process.env.FRONTEND_URL || 'http://localhost:8000',
+    ),
     ...expandPublicSiteOrigins(process.env.NEXT_PUBLIC_SITE_URL),
     ...additionalCorsFromEnv(),
     'http://localhost:8000',
@@ -125,7 +127,11 @@ async function bootstrap() {
       );
     }
     const fe = process.env.FRONTEND_URL?.trim();
-    if (!fe || fe.startsWith('http://localhost') || fe.startsWith('http://127.')) {
+    if (
+      !fe ||
+      fe.startsWith('http://localhost') ||
+      fe.startsWith('http://127.')
+    ) {
       console.warn(
         '[api] FRONTEND_URL sollte in Produktion die öffentliche https://-URL der Web-App sein (CORS + E-Mail-Links).',
       );

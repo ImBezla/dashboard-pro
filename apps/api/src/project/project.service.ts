@@ -123,7 +123,10 @@ export class ProjectService {
     if (dto.name !== undefined && dto.name !== existing.name) {
       parts.push(`Name geändert`);
     }
-    if (dto.description !== undefined && dto.description !== existing.description) {
+    if (
+      dto.description !== undefined &&
+      dto.description !== existing.description
+    ) {
       parts.push(`Beschreibung angepasst`);
     }
     if (dto.status !== undefined && dto.status !== existing.status) {

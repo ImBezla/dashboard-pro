@@ -8,8 +8,7 @@ import { NotificationsService } from './notifications.service';
   imports: [
     PrismaModule,
     JwtModule.register({
-      secret:
-        process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+      secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     }),
   ],
   providers: [NotificationsGateway, NotificationsService],

@@ -10,24 +10,45 @@ cd "$ROOT"
 cat <<'EOF'
 === DashboardPro — VPS hochladen / live schalten ===
 
+WICHTIG — zwei Rechner
+  • Befehle mit „ssh root@…“ oder „cd /root“: auf dem VPS ausführen (nach ssh), nicht auf dem Mac.
+  • „cd /root“ gibt es auf dem Mac nicht — /root ist das Home von root auf Linux.
+
 Voraussetzungen auf dem VPS
   • Ubuntu o. Ä., SSH
   • Docker + Plugin „docker compose“
   • Optional: nginx/Caddy + TLS (öffentliche https-URLs)
 
-1) Code auf den Server
-  A) Git (empfohlen):
-     git clone <DEINE_REPO-URL>
-     cd dashboardpro
-     git checkout <branch>    # z. B. main oder cursor/postgresql-supabase-migration
+1) Code auf den Server — ZUERST (sonst schlägt scp fehl: „No such file or directory“)
+
+  Vom Mac aus, einmalig (klont nach /root/dashboardpro auf dem VPS):
+    ssh root@72.61.95.246 "git clone https://github.com/ImBezla/dashboard-pro.git dashboardpro && ls -la dashboardpro/docker-compose.deploy.yml"
+
+  Wenn der Ordner schon existiert:
+    ssh root@72.61.95.246 "cd dashboardpro && git pull"
+
+  Oder interaktiv auf dem VPS:
+    ssh root@72.61.95.246
+    cd /root
+    git clone https://github.com/ImBezla/dashboard-pro.git dashboardpro
+    cd dashboardpro && git checkout main && git pull
+
+  Branch wechseln falls nötig:
+    git checkout cursor/postgresql-supabase-migration   # Beispiel
 
   B) Ohne Git — Bundle auf dem Mac:
      npm run dist:deploy
-     → Ordner dist/deploy/ per scp/rsync auf den VPS kopieren, dort cd <Zielordner>
+     → dist/deploy/ per scp/rsync auf den VPS, dann dort cd …
 
 2) Umgebung (.env.deploy — nicht ins Git committen)
-     cp .env.deploy.example .env.deploy
-     Editor: mindestens
+     Lokal am Mac: .env.deploy pflegen, dann ERST NACH Schritt 1 hochladen:
+
+     scp .env.deploy root@72.61.95.246:/root/dashboardpro/.env.deploy
+
+     (Wenn der Klon woanders liegt: Zielpfad anpassen, auf dem VPS finden mit:
+      ssh root@72.61.95.246 "find /root /home -maxdepth 5 -name docker-compose.deploy.yml 2>/dev/null")
+
+     Variablen in .env.deploy u. a.:
        JWT_SECRET          (stark, z. B. openssl rand -base64 48)
        FRONTEND_URL        (https://… Web-App)
        NEXT_PUBLIC_SITE_URL
@@ -51,6 +72,14 @@ Voraussetzungen auf dem VPS
 
 Hinweis: NEXT_PUBLIC_* werden ins Web-Image gebaut — nach URL-Änderung immer „docker:deploy:up“ neu.
 EOF
+
+echo ""
+echo "→ Nur wenn Schritt 1 (clone) auf dem VPS schon geklappt hat — .env.deploy hochladen:"
+if [[ -f "$ROOT/.env.deploy" ]]; then
+  echo "  scp \"$ROOT/.env.deploy\" root@72.61.95.246:/root/dashboardpro/.env.deploy"
+else
+  echo "  (noch keine .env.deploy hier — zuerst lokal anlegen, dann erneut npm run deploy:vps)"
+fi
 
 if [[ "${1:-}" == "--verify" ]]; then
   if [[ ! -f "$ROOT/.env.deploy" ]]; then

@@ -72,7 +72,9 @@ function fromRow(
 export class NotificationPreferencesService {
   constructor(private prisma: PrismaService) {}
 
-  async getEffective(userId: string): Promise<EffectiveNotificationPreferences> {
+  async getEffective(
+    userId: string,
+  ): Promise<EffectiveNotificationPreferences> {
     const row = await this.prisma.userNotificationPreferences.findUnique({
       where: { userId },
     });
@@ -91,7 +93,9 @@ export class NotificationPreferencesService {
     }
     if (dto.phoneE164 !== undefined) {
       const t =
-        typeof dto.phoneE164 === 'string' ? dto.phoneE164.trim() : dto.phoneE164;
+        typeof dto.phoneE164 === 'string'
+          ? dto.phoneE164.trim()
+          : dto.phoneE164;
       raw.phoneE164 = t === '' || t === null ? null : t;
     }
     delete raw.lastWeeklyDigestSentAt;

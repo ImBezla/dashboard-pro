@@ -220,14 +220,8 @@ export class TaskService {
       organizationId,
     });
 
-    if (
-      task.assignedToId &&
-      task.assignedToId !== before?.assignedToId
-    ) {
-      void this.emailService.sendTaskAssignedEmail(
-        task.assignedToId,
-        task.id,
-      );
+    if (task.assignedToId && task.assignedToId !== before?.assignedToId) {
+      void this.emailService.sendTaskAssignedEmail(task.assignedToId, task.id);
     }
 
     return task;

@@ -44,7 +44,10 @@ export class RemindersScheduler {
       const eff = await this.prefs.getEffective(uid);
       const wantEmail = eff.emailEnabled && eff.emailTaskDue;
       const wantSms =
-        eff.smsEnabled && eff.smsTaskDue && eff.phoneE164 && eff.phoneE164.length > 3;
+        eff.smsEnabled &&
+        eff.smsTaskDue &&
+        eff.phoneE164 &&
+        eff.phoneE164.length > 3;
       if (!wantEmail && !wantSms) continue;
 
       const deadline = t.deadline ? new Date(t.deadline) : null;

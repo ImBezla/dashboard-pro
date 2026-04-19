@@ -40,9 +40,7 @@ export class EmailService {
     const smtpPass = this.normalizeSmtpPass(
       process.env.SMTP_PASS ?? process.env.GMAIL_APP_PASSWORD,
     );
-    const gmailAppPass = this.normalizeSmtpPass(
-      process.env.GMAIL_APP_PASSWORD,
-    );
+    const gmailAppPass = this.normalizeSmtpPass(process.env.GMAIL_APP_PASSWORD);
 
     if (smtpHost && smtpUser && smtpPass) {
       return nodemailer.createTransport({
@@ -264,7 +262,10 @@ export class EmailService {
    * Send task assignment notification
    * @returns true wenn mindestens E-Mail oder SMS versucht wurde
    */
-  async sendTaskAssignedEmail(userId: string, taskId: string): Promise<boolean> {
+  async sendTaskAssignedEmail(
+    userId: string,
+    taskId: string,
+  ): Promise<boolean> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     const task = await this.prisma.task.findUnique({ where: { id: taskId } });
 
@@ -698,9 +699,7 @@ export class EmailService {
         ${recentlyTouchedOpen
           .map((t) => {
             const st = this.escapeHtml(t.title);
-            const pn = t.project?.name
-              ? this.escapeHtml(t.project.name)
-              : '—';
+            const pn = t.project?.name ? this.escapeHtml(t.project.name) : '—';
             return `<tr><td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#334155;">${st}</td><td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:13px;color:#64748b;">${pn}</td></tr>`;
           })
           .join('')}
@@ -768,7 +767,10 @@ export class EmailService {
         recentlyTouchedOpen.length
           ? '\n\nOffene Aufgaben (zuletzt bearbeitet):\n' +
             recentlyTouchedOpen
-              .map((t) => `- ${t.title}${t.project?.name ? ` (${t.project.name})` : ''}`)
+              .map(
+                (t) =>
+                  `- ${t.title}${t.project?.name ? ` (${t.project.name})` : ''}`,
+              )
               .join('\n')
           : ''
       }${upcomingDeadlines.length ? '\n\nAnstehende Deadlines:\n' + upcomingDeadlines.map((t) => `- ${t.title}`).join('\n') : ''}\n\n${base}/tasks`,

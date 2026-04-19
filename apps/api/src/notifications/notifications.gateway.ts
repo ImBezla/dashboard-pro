@@ -70,7 +70,9 @@ export class NotificationsGateway
     }
   }
 
-  handleDisconnect(_client: Socket) {}
+  handleDisconnect(client: Socket) {
+    void client;
+  }
 
   /** Nur Mitglieder der Organisation, bei denen Push (Realtime) nicht deaktiviert ist. */
   private async emitToOrgMembersWithPush(
