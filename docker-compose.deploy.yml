@@ -5,6 +5,7 @@
 
 services:
   api:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: docker/Dockerfile.api
@@ -52,6 +53,7 @@ services:
       start_period: 120s
 
   web:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: docker/Dockerfile.web
