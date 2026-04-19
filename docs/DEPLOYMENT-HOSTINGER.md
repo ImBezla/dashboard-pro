@@ -92,8 +92,8 @@ FRONTEND_URL=https://dashboardpro.de
 NEXT_PUBLIC_SITE_URL=https://dashboardpro.de
 NEXT_PUBLIC_API_URL=https://api.dashboardpro.de
 
-# PostgreSQL (z. B. Supabase → Project Settings → Database → URI, Direct, Port 5432)
-DATABASE_URL=postgresql://postgres:[PASSWORT]@db.[REF].supabase.co:5432/postgres?sslmode=require
+# PostgreSQL (Supabase → Connect → Session mode; Host pooler.supabase.com — nicht db.* für Docker/VPS)
+DATABASE_URL=postgresql://postgres.[REF]:[PASSWORT]@aws-0-[REGION].pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
 - **`FRONTEND_URL`**: exakt die Origin der Web-App (CORS, E-Mail-Links) – hier ohne `www`, wenn nur die Apex-Domain genutzt wird; sonst konsistent zu dem, was Nutzer im Browser sehen.

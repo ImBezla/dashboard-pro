@@ -16,7 +16,7 @@ services:
       CI: "true"
       # Postgres/Supabase: Advisory-Lock für migrate deploy aktiv (Standard 0).
       PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-0}"
-      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL fehlt (PostgreSQL, z. B. Supabase Direct URI)}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL fehlt (PostgreSQL; Docker/VPS: Supabase Session Pooler — docs/SUPABASE.md)}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}
       FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL fehlt (öffentliche Web-URL, https://…)}
       # Optional: zweite kanonische Web-URL (z. B. www vs. Apex) für CORS — siehe apps/api/src/main.ts

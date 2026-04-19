@@ -32,8 +32,11 @@ check_nonempty DATABASE_URL
 
 DB="$(value_of DATABASE_URL)"
 if [[ "$DB" != postgresql://* && "$DB" != postgres://* ]]; then
-  echo "DATABASE_URL muss mit postgresql:// oder postgres:// beginnen (Supabase Direct URI)." >&2
+  echo "DATABASE_URL muss mit postgresql:// oder postgres:// beginnen." >&2
   exit 1
+fi
+if [[ "$DB" == *"@db."*".supabase.co"* ]]; then
+  echo "Hinweis: DATABASE_URL nutzt Supabase Direct (db.*.supabase.co) — oft nur IPv6. Docker-Container auf vielen VPS haben kein IPv6 → Prisma P1001. Session Pooler aus dem Dashboard verwenden (pooler.supabase.com). Siehe docs/SUPABASE.md." >&2
 fi
 
 JWT="$(value_of JWT_SECRET)"

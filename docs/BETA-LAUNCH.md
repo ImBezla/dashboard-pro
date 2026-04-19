@@ -14,7 +14,7 @@ Kurzfassung für **ein paar Beta-Tester**: online bringen, ohne „Marketing-Liv
 
 | Variable | Hinweis |
 |----------|---------|
-| `DATABASE_URL` | **PostgreSQL** (z. B. Supabase Direct URI) — siehe `docs/SUPABASE.md`. |
+| `DATABASE_URL` | **PostgreSQL** (z. B. Supabase Session Pooler auf Docker/VPS) — siehe `docs/SUPABASE.md`. |
 | `JWT_SECRET` | Stark, zufällig (z. B. `openssl rand -base64 32`). **Darf nicht der Default bleiben.** |
 | `FRONTEND_URL` | Öffentliche **https://**-URL der Web-App (CORS + E-Mail-Links). |
 | `PORT` | z. B. `3002` intern; nach außen per Reverse-Proxy. |

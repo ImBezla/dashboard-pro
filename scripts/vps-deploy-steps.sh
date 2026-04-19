@@ -54,7 +54,7 @@ Voraussetzungen auf dem VPS
        FRONTEND_URL        (https://… Web-App)
        NEXT_PUBLIC_SITE_URL
        NEXT_PUBLIC_API_URL (https://… API, vom Browser erreichbar)
-       DATABASE_URL        (Supabase Direct URI — docs/SUPABASE.md)
+       DATABASE_URL        (Supabase Session Pooler auf Docker/VPS — docs/SUPABASE.md)
        E-Mail: SMTP_* oder SMTP_USER + GMAIL_APP_PASSWORD
 
 3) Prüfen (im Repo-Root auf dem VPS, .env.deploy muss liegen)
