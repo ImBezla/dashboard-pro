@@ -4,6 +4,7 @@ import { Suspense, useState, FormEvent, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
+import { AuthBackToSiteLink } from '@/components/auth/AuthBackToSiteLink';
 import { API_BASE_URL } from '@/lib/api-base-url';
 import {
   apiUnreachableUserMessage,
@@ -31,8 +32,8 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError('');
     if (!tokenFromUrl) return;
-    if (password.length < 6) {
-      setError('Passwort muss mindestens 6 Zeichen haben.');
+    if (password.length < 8) {
+      setError('Passwort muss mindestens 8 Zeichen haben.');
       return;
     }
     if (password !== password2) {
@@ -65,7 +66,8 @@ function ResetPasswordForm() {
 
   if (done) {
     return (
-      <div className="auth-form-page min-h-screen flex items-center justify-center bg-light">
+      <div className="auth-form-page relative min-h-screen flex items-center justify-center bg-light">
+        <AuthBackToSiteLink />
         <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
           <h1 className="text-2xl font-bold text-primary mb-4">Passwort geändert</h1>
           <p className="text-text-light mb-6">
@@ -83,7 +85,8 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="auth-form-page min-h-screen flex items-center justify-center bg-light">
+    <div className="auth-form-page relative min-h-screen flex items-center justify-center bg-light">
+      <AuthBackToSiteLink />
       <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
           <DashboardProWordmarkHomeLink

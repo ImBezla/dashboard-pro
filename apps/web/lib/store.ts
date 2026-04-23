@@ -66,6 +66,8 @@ export interface AuthUser {
   /** Nur OWNER: Pack-Auswahl im Onboarding ausstehend. */
   needsPackSelection?: boolean;
   notificationPreferences?: NotificationPreferencesState | null;
+  /** Plattform-Betreiber (global ADMIN oder PLATFORM_ADMIN_EMAILS). */
+  isPlatformAdmin?: boolean;
 }
 
 interface AuthState {

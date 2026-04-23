@@ -72,6 +72,7 @@ export class UserController {
       enabledModules,
       needsPackSelection,
       notificationPreferences,
+      isPlatformAdmin: profile.isPlatformAdmin,
     };
   }
 
@@ -162,6 +163,7 @@ export class UserController {
       enabledModules,
       needsPackSelection,
       notificationPreferences,
+      isPlatformAdmin: profile.isPlatformAdmin,
     };
   }
 

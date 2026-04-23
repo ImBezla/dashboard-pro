@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
 function normalizeEmailInput(value: unknown): string {
   if (typeof value !== 'string') return '';
@@ -15,10 +15,12 @@ export class RegisterDto {
   email: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(8, { message: 'Passwort muss mindestens 8 Zeichen haben' })
+  @MaxLength(128)
   password: string;
 
   @IsString()
   @MinLength(2)
+  @MaxLength(200)
   name: string;
 }

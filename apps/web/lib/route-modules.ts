@@ -35,6 +35,7 @@ export function isPathAllowedByModules(
   pathname: string,
   enabledModules: string[] | null | undefined,
 ): boolean {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return true;
   const mod = requiredModuleForPath(pathname);
   if (!mod) return true;
   if (!enabledModules || enabledModules.length === 0) return true;

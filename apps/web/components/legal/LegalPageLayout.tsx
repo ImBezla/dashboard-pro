@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SUPPORT_EMAIL } from '@/lib/site-url';
 
 export type LegalNavId = 'impressum' | 'datenschutz' | 'agb';
 
@@ -19,6 +20,13 @@ export function LegalProjectNotice() {
         <Link href="/impressum" className="font-medium text-primary underline-offset-2 hover:underline">
           Impressum
         </Link>
+        . Support:{' '}
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="font-medium text-primary underline-offset-2 hover:underline break-all"
+        >
+          {SUPPORT_EMAIL}
+        </a>
         .
       </p>
     </div>

@@ -7,6 +7,7 @@ import {
   PUBLISHER_STREET,
   SITE_DESCRIPTION_DE,
   SITE_NAME,
+  SUPPORT_EMAIL,
 } from '@/lib/site-url';
 import { parseOrgSameAsFromEnv } from '@/lib/seo/org-same-as';
 
@@ -34,6 +35,7 @@ export function RootJsonLd() {
         '@id': publisherId,
         name: PUBLISHER_NAME,
         legalName: PUBLISHER_NAME,
+        email: SUPPORT_EMAIL,
         url,
         logo: logoUrl,
         ...(sameAs.length ? { sameAs } : {}),

@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
+import { AuthBackToSiteLink } from '@/components/auth/AuthBackToSiteLink';
 import { API_BASE_URL } from '@/lib/api-base-url';
 import {
   apiUnreachableUserMessage,
@@ -45,7 +46,8 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="auth-form-page min-h-screen flex items-center justify-center bg-light">
+    <div className="auth-form-page relative min-h-screen flex items-center justify-center bg-light">
+      <AuthBackToSiteLink />
       <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
           <DashboardProWordmarkHomeLink

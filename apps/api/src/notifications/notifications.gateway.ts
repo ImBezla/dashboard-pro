@@ -7,16 +7,11 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
+import { getCorsOriginList } from '../common/cors-origins';
 
-const socketCorsOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:8000',
-  'http://localhost:8000',
-  'http://127.0.0.1:8000',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:3001',
-  'http://127.0.0.1:3001',
-];
+const socketCorsOrigins = getCorsOriginList(
+  process.env.NODE_ENV === 'production',
+);
 
 @WebSocketGateway({
   cors: {

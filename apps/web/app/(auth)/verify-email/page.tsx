@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
+import { AuthBackToSiteLink } from '@/components/auth/AuthBackToSiteLink';
 import { API_BASE_URL } from '@/lib/api-base-url';
 
 const API_URL = API_BASE_URL;
@@ -77,7 +78,8 @@ function VerifyEmailContent() {
   }, [token]);
 
   return (
-    <div className="auth-form-page min-h-screen flex items-center justify-center bg-light">
+    <div className="auth-form-page relative min-h-screen flex items-center justify-center bg-light">
+      <AuthBackToSiteLink />
       <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
         <div className="mb-6 flex justify-center">
           <DashboardProWordmarkHomeLink />

@@ -10,14 +10,16 @@ import {
   SIDEBAR_NAV_SECTIONS,
   isNavItemVisible,
 } from '@/lib/module-nav';
+import { isPlatformAdminUser } from '@/lib/platform-admin';
 import { useTranslation } from '@/lib/i18n/context';
 
 export function Sidebar() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
-  const enabledModules = useAuthStore((s) => s.user?.enabledModules);
-  const org = useAuthStore((s) => s.user?.organization);
+  const authUser = useAuthStore((s) => s.user);
+  const enabledModules = authUser?.enabledModules;
+  const org = authUser?.organization;
   const brand = org?.branding;
   const sidebarTitle = brand?.displayName ?? org?.name ?? t('sidebar.workspace');
   const headingStyle = brand?.headingColor
@@ -118,9 +120,15 @@ export function Sidebar() {
 
         <div className="p-4">
           {SIDEBAR_NAV_SECTIONS.map((section, idx) => {
-            const visibleItems = section.items.filter((item) =>
-              isNavItemVisible(item, enabledModules),
-            );
+            const visibleItems = section.items.filter((item) => {
+              if (
+                item.platformAdminOnly &&
+                !isPlatformAdminUser(authUser ?? null)
+              ) {
+                return false;
+              }
+              return isNavItemVisible(item, enabledModules);
+            });
             if (visibleItems.length === 0) return null;
             return (
               <div key={idx} className="mb-8">

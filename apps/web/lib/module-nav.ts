@@ -52,6 +52,8 @@ export type SidebarNavItem = {
   always?: boolean;
   /** Aktiv bei Unterpfaden (z. B. /flow/…). */
   matchChildren?: boolean;
+  /** Nur sichtbar wenn GET /users/me → isPlatformAdmin. */
+  platformAdminOnly?: boolean;
 };
 
 export type SidebarNavSection = {
@@ -122,6 +124,13 @@ export const SIDEBAR_NAV_SECTIONS: SidebarNavSection[] = [
   {
     sectionKey: 'nav.section.system',
     items: [
+      {
+        href: '/admin',
+        labelKey: 'nav.platform_admin',
+        icon: '🛡️',
+        always: true,
+        platformAdminOnly: true,
+      },
       { href: '/settings', labelKey: 'nav.settings', icon: '⚙️', always: true },
       { href: '/security', labelKey: 'nav.security', icon: '🔒', moduleKey: 'security' },
       { href: '/help', labelKey: 'nav.help', icon: '❓', always: true },

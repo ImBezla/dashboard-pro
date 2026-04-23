@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore, type AuthUser } from '@/lib/store';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
+import { AuthBackToSiteLink } from '@/components/auth/AuthBackToSiteLink';
 import { API_BASE_URL } from '@/lib/api-base-url';
 import {
   apiUnreachableUserMessage,
@@ -17,10 +18,12 @@ const API_URL = API_BASE_URL;
 const inputClassName =
   'w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50';
 
+const MIN_PW = 8;
+
 function passwordStrengthLabel(pw: string): { label: string; tone: 'muted' | 'warn' | 'ok' } {
   const len = pw.length;
-  if (len === 0) return { label: 'mind. 6 Zeichen', tone: 'muted' };
-  if (len < 6) return { label: `noch ${6 - len} Zeichen`, tone: 'warn' };
+  if (len === 0) return { label: `mind. ${MIN_PW} Zeichen`, tone: 'muted' };
+  if (len < MIN_PW) return { label: `noch ${MIN_PW - len} Zeichen`, tone: 'warn' };
   if (len < 10) return { label: 'ok', tone: 'ok' };
   return { label: 'stark', tone: 'ok' };
 }
@@ -55,8 +58,8 @@ export default function RegisterPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
       next.email = 'Ungültige E-Mail.';
     }
-    if (password.length < 6) {
-      next.password = 'Mind. 6 Zeichen.';
+    if (password.length < MIN_PW) {
+      next.password = `Mind. ${MIN_PW} Zeichen.`;
     }
     if (password !== confirmPassword) {
       next.confirmPassword = 'Passwörter unterschiedlich.';
@@ -165,7 +168,8 @@ export default function RegisterPage() {
 
   if (awaitingVerification) {
     return (
-      <div className="auth-form-page min-h-screen flex items-center justify-center bg-light px-4 py-8">
+      <div className="auth-form-page relative min-h-screen flex items-center justify-center bg-light px-4 py-8">
+        <AuthBackToSiteLink />
         <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
           <header className="mb-8 border-b border-border pb-8 text-center">
             <DashboardProWordmarkHomeLink className="mx-auto" />
@@ -210,7 +214,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-form-page min-h-screen flex items-center justify-center bg-light px-4 py-8">
+    <div className="auth-form-page relative min-h-screen flex items-center justify-center bg-light px-4 py-8">
+      <AuthBackToSiteLink />
       <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <header className="mb-10 border-b border-border pb-8 text-center">
           <DashboardProWordmarkHomeLink className="mx-auto" />

@@ -31,6 +31,7 @@ import { RemindersModule } from './reminders/reminders.module';
 import { DealModule } from './deal/deal.module';
 import { CommandFeedModule } from './command-feed/command-feed.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { NewsletterModule } from './newsletter/newsletter.module';
     DealModule,
     CommandFeedModule,
     NewsletterModule,
+    AdminModule,
   ],
   providers: [
     {

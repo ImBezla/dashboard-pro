@@ -12,6 +12,24 @@
 2. Auf dem Server: Repo klonen, `.env.deploy` hochladen (`scp`), im Repo-Root `docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build` (oder `npm run docker:deploy:up`, falls Node installiert ist).
 3. Die **komplette Befehlsreihenfolge** inkl. Healthchecks steht in: `npm run deploy:vps` → Skript **`scripts/vps-deploy-steps.sh`** (oben im Skript: **UPDATE** für bestehende Installation, darunter **Erstinstallation**).
 
+### Go-Live mit `.env.deploy` (Registrierung, Supabase, HTTPS)
+
+Vor **`docker compose … up`** im Repo-Root:
+
+```bash
+npm run deploy:verify
+```
+
+Das Skript **`scripts/verify-env-deploy.sh`** prüft u. a.: **`JWT_SECRET`** (Länge, kein Platzhalter), **`FRONTEND_URL`** / **`NEXT_PUBLIC_SITE_URL`** (**`https://`**, kein **localhost**), **`NEXT_PUBLIC_API_URL`** (**`https://…`** oder **`/api`**), **`DATABASE_URL`** (Postgres-Schema; bei **Supabase Direct `db.*.supabase.co`** Abbruch mit Hinweis auf **Session Pooler**; bei Supabase-Host **`sslmode=require`**), sowie **E-Mail** (**SMTP** oder **Gmail-App-Passwort** oder **`RESEND_API_KEY`**) — außer **`SKIP_EMAIL_VERIFICATION=true`** (nur Tests).
+
+Die **API** bricht unter **`NODE_ENV=production`** zusätzlich ab, wenn **`JWT_SECRET`** zu schwach ist oder **`FRONTEND_URL`** keine öffentliche **`https://`**-URL ist (kein localhost).
+
+**Supabase:** Session-Pooler-URI aus dem Dashboard, **`?sslmode=require`** — Details: **[SUPABASE.md](./SUPABASE.md)**.
+
+**Sicherheit (Anwendung):** In Produktion sind **keine** localhost-CORS-Origins mehr erlaubt (nur `FRONTEND_URL` / `NEXT_PUBLIC_SITE_URL` / `ADDITIONAL_CORS_ORIGINS`); **HSTS** und **`trust proxy`** (korrekte Client-IP für Throttling/Audit); **Login** führt immer einen bcrypt-Vergleich aus (weniger Timing-Unterschied bei existierender vs. fehlender E-Mail); **Passwörter** mindestens **8** Zeichen, bcrypt standardmäßig Faktor **12** in Produktion (optional **`BCRYPT_ROUNDS`** 10–14); **Prisma** schreibt in Produktion nur **Fehler**-Logs; Session-**Cookie** erhält **`Secure`**, wenn das Web mit **`NODE_ENV=production`** oder **`NEXT_PUBLIC_SITE_URL`** per **https** gebaut wird. **Hinweis:** Das JWT liegt zusätzlich im **localStorage** (für API-Clients) — XSS-Härtung bleibt wichtig (Content-Security-Policy am Proxy/Edge).
+
+**Plattform-Admin (`/admin`):** Zugriff nur bei **`User.role = 'ADMIN'`** in der Datenbank **oder** E-Mail in **`PLATFORM_ADMIN_EMAILS`** (kommagetrennt, in **API** und **Web**-Container identisch setzen, siehe `.env.deploy.example`). Nach Rollenänderung in der DB: **neu einloggen** (JWT enthält `globalRole`).
+
 ### VPS — bestehende Installation nur aktualisieren
 
 **Meist:** auf dem Server ins Repo, **`git pull`** — fertig.

@@ -10,6 +10,7 @@ import { TeamCard } from '@/components/dashboard/TeamCard';
 import { ProjectCard } from '@/components/dashboard/ProjectCard';
 import { TaskItem } from '@/components/dashboard/TaskItem';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
+import { PlatformAdminOverviewStripe } from '@/components/dashboard/PlatformAdminOverviewStripe';
 import { DashboardMiniCalendar } from '@/components/dashboard/DashboardMiniCalendar';
 import { DashboardRecentFiles } from '@/components/dashboard/DashboardRecentFiles';
 import {
@@ -364,6 +365,8 @@ export default function DashboardPage() {
           ⚙️ Layout
         </button>
       </div>
+
+      <PlatformAdminOverviewStripe />
 
       {/* Widget Configuration Panel - Slide in from right */}
       {showWidgetConfig && (

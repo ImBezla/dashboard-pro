@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getSiteUrl, SITE_DESCRIPTION_DE, SITE_NAME } from '@/lib/site-url';
+import {
+  getSiteUrl,
+  SITE_DESCRIPTION_DE,
+  SITE_NAME,
+  SUPPORT_EMAIL,
+} from '@/lib/site-url';
 import {
   LANDING_FAQS,
   LANDING_LONG_SUMMARY_DE,
@@ -26,6 +31,9 @@ export function GET() {
     ...LANDING_FAQS.flatMap((f) => [`### ${f.q}`, f.a, '']),
     '## Newsletter',
     'Auf der Startseite: Anmeldung per E-Mail; die API sendet eine Bestätigungsmail (Double-Opt-in). Endpunkte: POST /newsletter/subscribe, POST /newsletter/confirm. Bestätigungsseite: /verify-newsletter?token=…',
+    '',
+    '## Support',
+    `- E-Mail: ${SUPPORT_EMAIL}`,
     '',
     '## Wichtige URLs',
     `- Start: ${base}/`,

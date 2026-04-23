@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SUPPORT_EMAIL } from '@/lib/site-url';
 
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -166,11 +167,16 @@ export default function HelpPage() {
         <h2 className="text-xl font-bold text-dark mb-4">Kontakt & Support</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="p-4 bg-light rounded-lg">
-            <h3 className="font-semibold text-dark mb-2">Organisation</h3>
-            <p className="text-sm text-text-light">
-              Support und Ansprechpartner richten sich nach Ihrer Installation
-              (z. B. interne IT oder Dienstleister).
+            <h3 className="font-semibold text-dark mb-2">E-Mail-Support</h3>
+            <p className="text-sm text-text-light mb-2">
+              Schreiben Sie uns bei Fragen zur Nutzung, Fehlern oder Feedback:
             </p>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="text-primary hover:text-primary-dark font-semibold break-all"
+            >
+              {SUPPORT_EMAIL}
+            </a>
           </div>
           <div className="p-4 bg-light rounded-lg">
             <h3 className="font-semibold text-dark mb-2">Einstellungen</h3>

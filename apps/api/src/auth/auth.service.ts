@@ -23,10 +23,23 @@ import {
   type ResolvedOrganizationBranding,
 } from '../common/org-settings.util';
 import { pickOrganizationMembership } from '../organization/active-org.util';
+import { isPlatformAdminUser } from '../common/platform-admin.util';
 
 const VERIFY_HOURS = 48;
 const RESET_HOURS = 1;
 const RESEND_COOLDOWN_MS = 2 * 60 * 1000;
+
+/** Bcrypt-Hash von „x“ (cost 10) — nur `compare()`, wenn User fehlt (Timing vs. Existenz). */
+const BCRYPT_TIMING_DUMMY_HASH =
+  '$2b$10$dSjmeToflepx2.Z/xUz0qONOGC5hEu4X5HFGW7DIl/hqZFlTN9f5O';
+
+function bcryptRounds(): number {
+  const n = Number(process.env.BCRYPT_ROUNDS);
+  if (Number.isFinite(n) && n >= 10 && n <= 14) {
+    return Math.trunc(n);
+  }
+  return process.env.NODE_ENV === 'production' ? 12 : 10;
+}
 
 export const EMAIL_NOT_VERIFIED_CODE = 'EMAIL_NOT_VERIFIED';
 
@@ -124,7 +137,7 @@ export class AuthService {
       where: { email: normalizedEmail },
     });
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, bcryptRounds());
     const now = new Date();
     const trimmedName = dto.name.trim();
 
@@ -361,15 +374,10 @@ export class AuthService {
       where: { email: normalizedEmail },
     });
 
-    if (!user) {
-      throw new UnauthorizedException(
-        'E-Mail oder Passwort ist nicht korrekt. Bitte prüfen Sie Ihre Eingabe.',
-      );
-    }
+    const hashForCompare = user?.password ?? BCRYPT_TIMING_DUMMY_HASH;
+    const passwordOk = await bcrypt.compare(dto.password, hashForCompare);
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-
-    if (!isPasswordValid) {
+    if (!user || !passwordOk) {
       throw new UnauthorizedException(
         'E-Mail oder Passwort ist nicht korrekt. Bitte prüfen Sie Ihre Eingabe.',
       );
@@ -458,7 +466,7 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, bcryptRounds());
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -493,6 +501,7 @@ export class AuthService {
       email: user.email,
       organizationId: membership?.organizationId ?? null,
       orgRole: membership?.role ?? null,
+      globalRole: user.role,
     });
   }
 
@@ -582,6 +591,7 @@ export class AuthService {
     }
 
     const { emailVerifiedAt, ...rest } = user;
+    const isPlatformAdmin = isPlatformAdminUser(rest.email, rest.role);
 
     return {
       ...rest,
@@ -590,6 +600,7 @@ export class AuthService {
       orgRole: membership?.role ?? null,
       organization,
       organizations,
+      isPlatformAdmin,
     };
   }
 
@@ -624,7 +635,7 @@ export class AuthService {
       throw new BadRequestException('Current password is incorrect');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    const hashedPassword = await bcrypt.hash(dto.newPassword, bcryptRounds());
 
     await this.prisma.user.update({
       where: { id: userId },

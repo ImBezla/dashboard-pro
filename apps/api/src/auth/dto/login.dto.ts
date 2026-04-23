@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, MinLength, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, MaxLength, IsNotEmpty } from 'class-validator';
 
 function normalizeEmailInput(value: unknown): string {
   if (typeof value !== 'string') return '';
@@ -17,6 +17,6 @@ export class LoginDto {
 
   @IsNotEmpty({ message: 'Passwort ist erforderlich' })
   @IsString()
-  @MinLength(6, { message: 'Passwort muss mindestens 6 Zeichen haben' })
+  @MaxLength(128)
   password: string;
 }

@@ -46,3 +46,6 @@ export const PUBLISHER_STREET = 'Salvatorstraße 11';
 export const PUBLISHER_POSTAL_CODE = '85290';
 export const PUBLISHER_ADDRESS_LOCALITY = 'Geisenfeld';
 export const PUBLISHER_ADDRESS_COUNTRY = 'DE';
+
+/** Öffentliche Support-Adresse (Hilfe, technische Fragen zu Dashboard Pro). */
+export const SUPPORT_EMAIL = 'help@dashboardpro.de';

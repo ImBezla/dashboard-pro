@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { LegalPageLayout } from '@/components/legal/LegalPageLayout';
 import { buildPageMetadata } from '@/lib/seo/build-page-metadata';
+import { SUPPORT_EMAIL } from '@/lib/site-url';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'Impressum',
@@ -46,9 +47,18 @@ Deutschland`}
               E-Mail:{' '}
               <a
                 className="font-medium text-primary underline-offset-2 hover:underline"
-                href="mailto:legal@sexoo.de"
+                href="mailto:info@northgatecorp.com"
               >
-                legal@sexoo.de
+                info@northgatecorp.com
+              </a>
+            </p>
+            <p className="mt-2 text-text-light">
+              Support und Hilfe zu Dashboard Pro:{' '}
+              <a
+                className="font-medium text-primary underline-offset-2 hover:underline"
+                href={`mailto:${SUPPORT_EMAIL}`}
+              >
+                {SUPPORT_EMAIL}
               </a>
             </p>
           </div>

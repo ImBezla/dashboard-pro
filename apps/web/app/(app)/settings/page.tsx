@@ -318,7 +318,7 @@ function SettingsPageInner() {
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    if (passwordData.newPassword.length < 8) {
       setError(t('settings.passwordTooShort'));
       return;
     }

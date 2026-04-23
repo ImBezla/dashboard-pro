@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import Link from 'next/link';
 import { DashboardProWordmarkHomeLink } from '@/components/brand/DashboardProWordmark';
+import { AuthBackToSiteLink } from '@/components/auth/AuthBackToSiteLink';
 import { API_BASE_URL } from '@/lib/api-base-url';
 import {
   apiUnreachableUserMessage,
@@ -211,7 +212,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-form-page min-h-screen flex items-center justify-center bg-light px-4 py-8">
+    <div className="auth-form-page relative min-h-screen flex items-center justify-center bg-light px-4 py-8">
+      <AuthBackToSiteLink />
       <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <header className="mb-10 border-b border-border pb-8 text-center">
           <DashboardProWordmarkHomeLink className="mx-auto" />

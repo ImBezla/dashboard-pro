@@ -25,6 +25,8 @@ services:
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
       ADDITIONAL_CORS_ORIGINS: ${ADDITIONAL_CORS_ORIGINS:-}
       PORT: "3002"
+      # smtp = nur Gmail/SMTP (ohne Resend); leer = Resend zuerst wenn RESEND_API_KEY gesetzt
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -40,6 +42,8 @@ services:
       SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-false}
       # Nach Double-Opt-in: Benachrichtigung an diese Adresse (z. B. dein Gmail)
       NEWSLETTER_ADMIN_EMAIL: ${NEWSLETTER_ADMIN_EMAIL:-}
+      # Kommagetrennte E-Mails mit Plattform-Admin (zusätzlich zu User.role === ADMIN)
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
     # Optional: persistenter Speicher (z. B. später lokale Uploads unter /data); DB liegt bei Supabase.
     volumes:
       - dashboardpro_api_data:/data
@@ -70,6 +74,7 @@ services:
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy muss mit API übereinstimmen}"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
     healthcheck:
       test:
         [
