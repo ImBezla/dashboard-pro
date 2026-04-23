@@ -20,6 +20,7 @@ fi
 
 echo "[api-entrypoint] $(date -u +%Y-%m-%dT%H:%M:%SZ) prisma CLI: $PRISMA_CMD"
 "$PRISMA_CMD" --version
+echo "[api-entrypoint] Hinweis: Port 3002 antwortet erst nach migrate deploy und Node-Start (curl vorher: connection refused)."
 
 if [ "${API_SKIP_PRISMA_MIGRATE:-}" = "true" ]; then
   echo "[api-entrypoint] WARNUNG: API_SKIP_PRISMA_MIGRATE=true — migrate deploy wird übersprungen (nur Notfall)." >&2
