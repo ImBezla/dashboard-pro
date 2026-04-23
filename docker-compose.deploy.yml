@@ -17,8 +17,8 @@ services:
       CI: "true"
       # Postgres/Supabase: Advisory-Lock für migrate deploy aktiv (Standard 0).
       PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-0}"
-      # Hinweistext ohne ":" in der Klammer — sonst bricht YAML ("mapping values are not allowed").
-      DATABASE_URL: "${postgresql://postgres:Weilbaum_12@db.vsyxumzhxvhnzurugxls.supabase.co:5432/postgres}"
+      # Aus .env.deploy (nie hier committen). Supabase Session Pooler → docs/SUPABASE.md
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL fehlt in .env.deploy}"
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}"
       FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL fehlt in .env.deploy (https-URL der Web-App)}"
       # Optional: zweite kanonische Web-URL (z. B. www vs. Apex) für CORS — siehe apps/api/src/main.ts
@@ -38,6 +38,8 @@ services:
       TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
       # Ohne SMTP: true = sofort Login nach Registrierung (nur intern/testen).
       SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-false}
+      # Nach Double-Opt-in: Benachrichtigung an diese Adresse (z. B. dein Gmail)
+      NEWSLETTER_ADMIN_EMAIL: ${NEWSLETTER_ADMIN_EMAIL:-}
     # Optional: persistenter Speicher (z. B. später lokale Uploads unter /data); DB liegt bei Supabase.
     volumes:
       - dashboardpro_api_data:/data

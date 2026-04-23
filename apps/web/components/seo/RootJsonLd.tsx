@@ -8,11 +8,14 @@ import {
   SITE_DESCRIPTION_DE,
   SITE_NAME,
 } from '@/lib/site-url';
+import { parseOrgSameAsFromEnv } from '@/lib/seo/org-same-as';
 
 export function RootJsonLd() {
   const url = getSiteUrl();
   const publisherId = `${url}/#publisher`;
   const websiteId = `${url}/#website`;
+  const logoUrl = `${url.replace(/\/$/, '')}/brand/logo-wordmark.svg`;
+  const sameAs = parseOrgSameAsFromEnv();
 
   const graph = {
     '@context': 'https://schema.org',
@@ -32,6 +35,8 @@ export function RootJsonLd() {
         name: PUBLISHER_NAME,
         legalName: PUBLISHER_NAME,
         url,
+        logo: logoUrl,
+        ...(sameAs.length ? { sameAs } : {}),
         address: {
           '@type': 'PostalAddress',
           streetAddress: PUBLISHER_STREET,
@@ -45,6 +50,8 @@ export function RootJsonLd() {
         name: SITE_NAME,
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
+        url,
+        image: `${url.replace(/\/$/, '')}/opengraph-image`,
         offers: {
           '@type': 'Offer',
           price: '0',

@@ -29,6 +29,7 @@
     "dist:deploy": "bash scripts/build-deploy-bundle.sh",
     "deploy:verify": "bash scripts/verify-env-deploy.sh",
     "deploy:vps": "bash scripts/vps-deploy-steps.sh",
+    "deploy:vps:update": "bash scripts/vps-deploy-steps.sh --update",
     "deploy:vps:verify": "bash scripts/vps-deploy-steps.sh --verify"
   },
   "devDependencies": {

@@ -2,15 +2,15 @@ import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo/build-page-metadata';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Passwort vergessen',
+  title: 'Newsletter bestätigen',
   description:
-    'Passwort für Dashboard Pro zurücksetzen — sicherer Link per E-Mail.',
-  path: '/forgot-password',
-  keywords: ['Passwort', 'Zurücksetzen', 'Dashboard Pro'],
+    'Newsletter-Anmeldung für Dashboard Pro abschließen — Double-Opt-in.',
+  path: '/verify-newsletter',
+  keywords: ['Newsletter', 'Bestätigung', 'Dashboard Pro'],
   noindex: true,
 });
 
-export default function ForgotPasswordLayout({
+export default function VerifyNewsletterLayout({
   children,
 }: {
   children: React.ReactNode;

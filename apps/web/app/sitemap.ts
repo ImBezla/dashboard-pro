@@ -15,15 +15,25 @@ const PUBLIC_PATHS: { path: string; changeFrequency: ChangeFreq; priority: numbe
     { path: '/impressum', changeFrequency: 'yearly', priority: 0.4 },
     { path: '/datenschutz', changeFrequency: 'yearly', priority: 0.35 },
     { path: '/agb', changeFrequency: 'yearly', priority: 0.35 },
+    { path: '/llms.txt', changeFrequency: 'monthly', priority: 0.25 },
   ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = getSiteUrl();
+  const base = getSiteUrl().replace(/\/$/, '');
   const now = new Date();
-  return PUBLIC_PATHS.map(({ path, changeFrequency, priority }) => ({
-    url: `${base}${path}`,
-    lastModified: now,
-    changeFrequency,
-    priority,
-  }));
+  return PUBLIC_PATHS.map(({ path, changeFrequency, priority }) => {
+    const url = `${base}${path}`;
+    return {
+      url,
+      lastModified: now,
+      changeFrequency,
+      priority,
+      alternates: {
+        languages: {
+          de: url,
+          'x-default': url,
+        },
+      },
+    };
+  });
 }

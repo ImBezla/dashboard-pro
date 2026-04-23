@@ -30,6 +30,7 @@ import { OperationsOsModule } from './operations-os/operations-os.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { DealModule } from './deal/deal.module';
 import { CommandFeedModule } from './command-feed/command-feed.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { CommandFeedModule } from './command-feed/command-feed.module';
     RemindersModule,
     DealModule,
     CommandFeedModule,
+    NewsletterModule,
   ],
   providers: [
     {

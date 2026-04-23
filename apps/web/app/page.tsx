@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { HomeLanding } from '@/components/landing/HomeLanding';
+import { HomeMachineReadableSection } from '@/components/landing/HomeMachineReadableSection';
 import { buildHomeMetadata } from '@/lib/seo/build-page-metadata';
 import { HomeJsonLd } from '@/components/seo/HomeJsonLd';
 
@@ -24,6 +25,7 @@ export default function Home() {
     <>
       <HomeJsonLd />
       <HomeLanding />
+      <HomeMachineReadableSection />
     </>
   );
 }

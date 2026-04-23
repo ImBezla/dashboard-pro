@@ -8,17 +8,53 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 VPS_HOST="${VPS_HOST:-DEINE_VPS_IP}"
 
+if [[ "${1:-}" == "--update" ]]; then
+  cat <<'EOF'
+=== DashboardPro — VPS UPDATE ===
+
+Auf dem VPS (Repo-Root, Pfad anpassen):
+  cd /PFAD/ZUM/REPO && git pull
+
+Das ist bei euch meistens alles.
+
+Nur wenn dieser Server die App per Docker aus diesem Repo fährt — sonst laufen alte Images:
+  docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build
+
+.env.deploy nur neu per scp, wenn URLs/Secrets/DATABASE_URL geändert wurden.
+Mehr: npm run deploy:vps
+EOF
+  exit 0
+fi
+
 cat <<'EOF'
 === DashboardPro — VPS hochladen / live schalten ===
 
 WICHTIG — zwei Rechner
-  • Befehle mit „ssh root@…“ oder „cd /root“: auf dem VPS ausführen (nach ssh), nicht auf dem Mac.
+  • Befehle mit „ssh root@…“ oder „cd …/dashboardpro“: auf dem VPS ausführen (nach ssh), nicht auf dem Mac.
   • „cd /root“ gibt es auf dem Mac nicht — /root ist das Home von root auf Linux.
 
 Voraussetzungen auf dem VPS
   • Ubuntu o. Ä., SSH
   • Docker + Plugin „docker compose“
   • Optional: nginx/Caddy + TLS (öffentliche https-URLs)
+
+--- UPDATE — Version läuft schon (üblich: nur pullen) ---
+
+  Auf dem VPS in den **Repo-Root** (z. B. /root/dashboardpro oder /var/www/dashboardpro):
+    cd /PFAD/ZUM/REPO && git pull
+
+  .env.deploy nur neu hochladen, wenn sich **URLs, Secrets oder DATABASE_URL** geändert haben:
+    scp .env.deploy root@DEINE_VPS_IP:/PFAD/ZUM/REPO/.env.deploy
+
+  **Nur wenn** ihr die App mit **docker-compose.deploy.yml** auf diesem Host betreibt — ohne neuen Build bleiben alte Images:
+    docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build
+    (oder: npm run docker:deploy:up — falls Node/npm auf dem VPS installiert ist)
+
+  Dabei: API startet mit **prisma migrate deploy** (docker/entrypoint-api.sh). Optional prüfen:
+    curl -sS http://127.0.0.1:3002/health
+    curl -sS -o /dev/null -w "Web %{http_code}\n" http://127.0.0.1:3000/
+
+--- ERSTINSTALLATION — noch kein Klon / neuer Server ---
 
 1) Code auf den Server — ZUERST (sonst schlägt scp fehl: „No such file or directory“)
 
@@ -36,8 +72,9 @@ Voraussetzungen auf dem VPS
     git clone https://github.com/ImBezla/dashboard-pro.git dashboardpro
     cd dashboardpro && git checkout main && git pull
 
-  Branch wechseln falls nötig:
-    git checkout cursor/postgresql-supabase-migration   # Beispiel
+  Anderen Branch deployen: git checkout <branch-name> && git pull
+
+  Hostinger-VPS mit nginx/Certbot in einem Rutsch: deploy/hostinger/README.md → full-go-live.sh
 
   B) Ohne Git — Bundle auf dem Mac:
      npm run dist:deploy

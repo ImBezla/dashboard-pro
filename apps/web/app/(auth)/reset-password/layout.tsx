@@ -7,6 +7,7 @@ export const metadata: Metadata = buildPageMetadata({
     'Neues Passwort für Ihr Dashboard-Pro-Konto festlegen.',
   path: '/reset-password',
   keywords: ['Passwort', 'Reset', 'Dashboard Pro'],
+  noindex: true,
 });
 
 export default function ResetPasswordLayout({

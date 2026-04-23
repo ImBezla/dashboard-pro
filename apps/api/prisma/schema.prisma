@@ -471,3 +471,20 @@ model DealMilestone {
 
   @@index([dealId])
 }
+
+/// Öffentliche Landing-Page: E-Mail für Infos/Updates (kein App-Account).
+/// Double-Opt-in: `confirmedAt` gesetzt nach Klick auf Link in der Bestätigungsmail.
+model NewsletterSubscription {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  /// gesetzt, wenn der Nutzer den Link in der Bestätigungsmail geklickt hat
+  confirmedAt DateTime?
+  verificationTokenHash   String?
+  verificationExpiresAt DateTime?
+  lastConfirmationSentAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([createdAt])
+  @@index([verificationTokenHash])
+}

@@ -8,15 +8,13 @@ import {
   SITE_DESCRIPTION_DE,
   SITE_NAME,
 } from '@/lib/site-url';
+import { getDefaultOtherMetadata } from '@/lib/seo/geo-other';
 
 const siteUrl = getSiteUrl();
 
 const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const bingVerification = process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
 const yandexVerification = process.env.NEXT_PUBLIC_YANDEX_VERIFICATION?.trim();
-const geoRegion = process.env.NEXT_PUBLIC_GEO_REGION?.trim() || 'DE';
-const geoPlacename = process.env.NEXT_PUBLIC_GEO_PLACENAME?.trim();
-const geoPosition = process.env.NEXT_PUBLIC_GEO_POSITION?.trim();
 const twitterSite = process.env.NEXT_PUBLIC_TWITTER_SITE?.trim();
 const twitterCreator = process.env.NEXT_PUBLIC_TWITTER_CREATOR?.trim();
 
@@ -91,6 +89,7 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         alt: SITE_NAME,
+        type: 'image/png',
       },
     ],
   },
@@ -119,13 +118,7 @@ export const metadata: Metadata = {
       'x-default': siteUrl,
     },
   },
-  other: {
-    'geo.region': geoRegion,
-    ...(geoPlacename ? { 'geo.placename': geoPlacename } : {}),
-    ...(geoPosition ? { 'geo.position': geoPosition, ICBM: geoPosition } : {}),
-    'apple-mobile-web-app-title': SITE_NAME,
-    'mobile-web-app-capable': 'yes',
-  },
+  other: getDefaultOtherMetadata(),
 };
 
 export const viewport: Viewport = {

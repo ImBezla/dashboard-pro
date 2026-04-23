@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "Dashboard Pro",
   "short_name": "Dashboard Pro",
-  "description": "Arbeitsplattform für Projekt-, Team- und Aufgabenmanagement",
-  "start_url": "/dashboard",
+  "description": "Arbeitsplattform für Projekt-, Team- und Aufgabenmanagement — Übersichten, Finanzen, Operations.",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#6366f1",

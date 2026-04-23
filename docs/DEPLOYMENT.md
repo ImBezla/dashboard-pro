@@ -3,7 +3,20 @@
 Überblick: **Next.js (Web)** und **NestJS (API)** als zwei Dienste. Das Repository enthält **Dockerfiles** und **`docker-compose.deploy.yml`** für einen schnellen Go-Live; alternativ kannst du die Apps auf **Vercel + Railway/Fly/Hetzner** o. Ä. getrennt hosten.
 
 **Hostinger + eigene Domain (z. B. dashboardpro.de):** Schritt-für-Schritt mit DNS, nginx und `.env.deploy` → **[DEPLOYMENT-HOSTINGER.md](./DEPLOYMENT-HOSTINGER.md)**.  
+**Hostinger VPS (Skripte, `full-go-live.sh`):** **[../deploy/hostinger/README.md](../deploy/hostinger/README.md)**.  
 **Master-Checkliste (Reihenfolge, Skripte):** **[GO-LIVE-CHECKLIST.md](./GO-LIVE-CHECKLIST.md)**.
+
+### VPS — Kurzfassung
+
+1. Lokal: `cp .env.deploy.example .env.deploy` ausfüllen, dann `npm run deploy:verify`.
+2. Auf dem Server: Repo klonen, `.env.deploy` hochladen (`scp`), im Repo-Root `docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build` (oder `npm run docker:deploy:up`, falls Node installiert ist).
+3. Die **komplette Befehlsreihenfolge** inkl. Healthchecks steht in: `npm run deploy:vps` → Skript **`scripts/vps-deploy-steps.sh`** (oben im Skript: **UPDATE** für bestehende Installation, darunter **Erstinstallation**).
+
+### VPS — bestehende Installation nur aktualisieren
+
+**Meist:** auf dem Server ins Repo, **`git pull`** — fertig.
+
+**Zusätzlich nur**, wenn dieselbe Maschine die App per **`docker-compose.deploy.yml`** ausliefert: nach dem Pull **`docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d --build`**, sonst laufen weiter die alten Images (besonders relevant bei geänderten **`NEXT_PUBLIC_*`** / **`JWT_SECRET`**). `.env.deploy` per `scp` nur bei geänderten URLs/Secrets/DB anfassen.
 
 ## Checkliste vor Go-Live
 

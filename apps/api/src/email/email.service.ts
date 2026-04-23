@@ -429,6 +429,102 @@ export class EmailService {
     });
   }
 
+  /** Double-Opt-in: Link führt zur Web-App `/verify-newsletter?token=…`. */
+  async sendNewsletterConfirmEmail(to: string, rawToken: string): Promise<boolean> {
+    const base = this.frontendBaseUrl();
+    const link = `${base}/verify-newsletter?token=${encodeURIComponent(rawToken)}`;
+    const safeTo = this.escapeHtml(to);
+    const inner = `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="background-color:#4f46e5;background-image:linear-gradient(135deg,#4f46e5 0%,#6366f1 45%,#7c3aed 100%);padding:32px 28px;text-align:center;">
+      ${emailBrandWordmarkRow('onDark')}
+      <p style="margin:0;font-family:${EMAIL_FONT_STACK};font-size:22px;font-weight:700;line-height:1.3;color:#ffffff;">Newsletter fast geschafft</p>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:32px 28px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:16px;line-height:1.6;color:#334155;">
+      <p style="margin:0 0 16px;">Hallo,</p>
+      <p style="margin:0 0 16px;">Sie haben sich für den <strong style="color:#475569;">Dashboard&nbsp;Pro</strong>-Newsletter eingetragen (<span style="word-break:break-all;">${safeTo}</span>).</p>
+      <p style="margin:0 0 20px;">Bitte bestätigen Sie mit einem Klick:</p>
+      <ul style="margin:0 0 20px;padding-left:22px;color:#475569;font-size:15px;line-height:1.55;">
+        <li style="margin:0 0 8px;">dass diese <strong>E-Mail-Adresse Ihnen gehört</strong> und erreichbar ist, und</li>
+        <li style="margin:0;">dass Sie <strong>gelegentliche Produkt-Infos</strong> (Neuerungen, Hinweise) per E-Mail erhalten möchten — jederzeit wieder abmeldbar, sobald wir einen Abmeldelink anbieten.</li>
+      </ul>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+        <tr>
+          <td style="border-radius:10px;background-color:#4f46e5;">
+            <a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">Newsletter bestätigen</a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 8px;font-size:14px;color:#64748b;">Der Link ist <strong style="color:#475569;">48&nbsp;Stunden</strong> gültig. Wenn Sie sich nicht angemeldet haben, ignorieren Sie diese E-Mail — dann wird nichts gespeichert.</p>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0 28px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.55;color:#64748b;">
+      <p style="margin:0 0 8px;">Button funktioniert nicht? Link kopieren:</p>
+      <p style="margin:0;padding:12px 14px;background-color:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;word-break:break-all;color:#475569;font-size:12px;">${this.escapeHtml(link)}</p>
+    </td>
+  </tr>
+</table>`;
+    const html = layoutTransactionEmail(
+      inner,
+      'Bitte bestätigen Sie Ihre Newsletter-Anmeldung für DashboardPro.',
+      this.frontendBaseUrl(),
+    );
+    const text = [
+      'Hallo,',
+      '',
+      'Newsletter Dashboard Pro — bitte bestätigen (48 Stunden gültig):',
+      '- E-Mail-Adresse gehört Ihnen',
+      '- gelegentliche Produkt-Infos per E-Mail gewünscht',
+      '',
+      link,
+      '',
+      'Wenn nicht von Ihnen: E-Mail ignorieren.',
+    ].join('\n');
+    return this.sendAuthTransactionalMail({
+      to,
+      subject: 'Newsletter bestätigen – DashboardPro',
+      html,
+      text,
+    });
+  }
+
+  /** Hinweis an Betreiber nach erfolgreichem Double-Opt-in (Empfänger: NEWSLETTER_ADMIN_EMAIL). */
+  async sendNewsletterAdminNewSubscriber(
+    adminEmail: string,
+    subscriberEmail: string,
+  ): Promise<boolean> {
+    const safeSub = this.escapeHtml(subscriberEmail);
+    const inner = `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="padding:28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:16px;line-height:1.6;color:#334155;">
+      <p style="margin:0 0 12px;font-weight:700;color:#0f172a;">Neuer Newsletter-Abonnent</p>
+      <p style="margin:0;">Die folgende Adresse hat den Newsletter <strong>bestätigt</strong> (Double-Opt-in):</p>
+      <p style="margin:16px 0 0;padding:14px 16px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;font-size:15px;word-break:break-all;color:#0f172a;">${safeSub}</p>
+    </td>
+  </tr>
+</table>`;
+    const html = layoutTransactionEmail(
+      inner,
+      `Neuer Newsletter-Abonnent: ${subscriberEmail}`,
+      this.frontendBaseUrl(),
+    );
+    const text = [
+      'Neuer Newsletter-Abonnent (bestätigt):',
+      subscriberEmail,
+    ].join('\n');
+    return this.sendEmail({
+      to: adminEmail,
+      subject: `Newsletter: neue Bestätigung – ${subscriberEmail}`,
+      html,
+      text,
+    });
+  }
+
   /**
    * Send task assignment notification
    * @returns true wenn mindestens E-Mail oder SMS versucht wurde

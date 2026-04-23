@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getSiteUrl, SITE_NAME } from '@/lib/site-url';
+import { getDefaultOtherMetadata } from '@/lib/seo/geo-other';
 
 const OG_IMAGE = {
   url: '/opengraph-image',
@@ -32,6 +33,7 @@ export function buildPageMetadata(input: {
     description: input.description,
     keywords: input.keywords,
     alternates: { canonical: url },
+    other: getDefaultOtherMetadata(),
     openGraph: {
       type: 'website',
       locale: 'de_DE',
@@ -40,7 +42,7 @@ export function buildPageMetadata(input: {
       siteName: SITE_NAME,
       title: ogTitle,
       description: input.description,
-      images: [{ ...OG_IMAGE, alt: ogTitle }],
+      images: [{ ...OG_IMAGE, alt: ogTitle, type: 'image/png' }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -80,6 +82,7 @@ export function buildHomeMetadata(input: {
     description: input.description,
     keywords: input.keywords,
     alternates: { canonical: base },
+    other: getDefaultOtherMetadata(),
     openGraph: {
       type: 'website',
       locale: 'de_DE',
@@ -88,7 +91,7 @@ export function buildHomeMetadata(input: {
       siteName: SITE_NAME,
       title: SITE_NAME,
       description: input.description,
-      images: [{ ...OG_IMAGE, alt: SITE_NAME }],
+      images: [{ ...OG_IMAGE, alt: SITE_NAME, type: 'image/png' }],
     },
     twitter: {
       card: 'summary_large_image',

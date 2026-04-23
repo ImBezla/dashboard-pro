@@ -5,6 +5,8 @@ import React from 'react';
 import Link from 'next/link';
 import { Instrument_Serif, Poppins } from 'next/font/google';
 import { getFooterDisplayHost } from '@/lib/site-url';
+import { LANDING_FAQS, LANDING_USE_CASES } from '@/lib/landing/marketing-copy';
+import { API_BASE_URL } from '@/lib/api-base-url';
 import { useTranslation } from '@/lib/i18n/context';
 import styles from './HomeLandingV6.module.css';
 
@@ -31,58 +33,40 @@ const trustNames = [
   'Northgate Corporate',
 ] as const;
 
-const useCases = [
-  {
-    k: 'Team',
-    t: 'Wer macht was bis wann?',
-    d: 'Aufgaben zuweisen, Status verfolgen und Engpässe früh sehen.',
-    c: '#6366f1',
-  },
-  {
-    k: 'Projekte',
-    t: 'Alles im Plan — ohne Extra-Tool.',
-    d: 'Projekte bündeln Aufgaben, Deadlines und Fortschritt an einem Ort.',
-    c: '#10b981',
-  },
-  {
-    k: 'Organisation',
-    t: 'Workspaces, Rollen, Zugriff.',
-    d: 'Mehrere Organisationen/Mandanten mit Rollen und sauberer Trennung.',
-    c: '#f59e0b',
-  },
-  {
-    k: 'Operations',
-    t: 'Weniger Reibung im Alltag.',
-    d: 'Module wie Kalender, Einkauf oder Finanzen je nach Bedarf aktivieren.',
-    c: '#ec4899',
-  },
-] as const;
-
-const faqs = [
-  {
-    q: 'Wie laden wir Team-Mitglieder ein?',
-    a: 'Über einen Einladungscode für euren Workspace. Danach seht ihr die Mitglieder im Team-Bereich und könnt Rollen verwalten.',
-  },
-  {
-    q: 'Kann ich mehrere Organisationen nutzen?',
-    a: 'Ja. Jede Organisation ist ein eigener Workspace mit Teams, Projekten und eigenen Einstellungen.',
-  },
-  {
-    q: 'Braucht man Schulung, um loszulegen?',
-    a: 'Nein. Nach der Registrierung könnt ihr direkt einen Workspace anlegen und mit Aufgaben/Projekten starten.',
-  },
-  {
-    q: 'Wie sieht es mit Nachvollziehbarkeit aus?',
-    a: 'Wichtige Änderungen können protokolliert werden. Außerdem gibt es Rollen und organisatorische Trennung.',
-  },
-] as const;
-
 export function HomeLanding() {
   const { t } = useTranslation();
   const footerHost = getFooterDisplayHost();
   const [openFaq, setOpenFaq] = React.useState<number>(0);
   const [navOpen, setNavOpen] = React.useState(false);
   const navDialogRef = React.useRef<HTMLDialogElement>(null);
+  const [nlEmail, setNlEmail] = React.useState('');
+  const [nlStatus, setNlStatus] = React.useState<
+    'idle' | 'loading' | 'success' | 'error' | 'network'
+  >('idle');
+
+  const submitNewsletter = React.useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (nlStatus === 'loading') return;
+      setNlStatus('loading');
+      try {
+        const res = await fetch(`${API_BASE_URL}/newsletter/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: nlEmail }),
+        });
+        if (res.ok) {
+          setNlStatus('success');
+          setNlEmail('');
+          return;
+        }
+        setNlStatus('error');
+      } catch {
+        setNlStatus('network');
+      }
+    },
+    [nlEmail, nlStatus],
+  );
 
   const [series, setSeries] = React.useState<number[]>(() => {
     const N = 42;
@@ -238,6 +222,9 @@ export function HomeLanding() {
               <a href="#faq" className={`${styles.navLink} ${styles.navAnchor}`}>
                 {t('landing.footer.anchor.faq')}
               </a>
+              <a href="#newsletter" className={`${styles.navLink} ${styles.navAnchor}`}>
+                {t('landing.footer.anchor.newsletter')}
+              </a>
               <Link href="/login" className={styles.navLink}>
                 {t('landing.footer.signIn')}
               </Link>
@@ -314,6 +301,13 @@ export function HomeLanding() {
                 <li>
                   <a href="#faq" className={styles.navDrawerRow} onClick={closeNav}>
                     <span className={styles.navDrawerRowLabel}>{t('landing.footer.anchor.faq')}</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#newsletter" className={styles.navDrawerRow} onClick={closeNav}>
+                    <span className={styles.navDrawerRowLabel}>
+                      {t('landing.footer.anchor.newsletter')}
+                    </span>
                   </a>
                 </li>
                 <li>
@@ -464,7 +458,7 @@ export function HomeLanding() {
             </div>
 
             <div className={styles.useGrid}>
-              {useCases.map((c) => (
+              {LANDING_USE_CASES.map((c) => (
                 <div
                   key={c.k}
                   className={styles.useCard}
@@ -685,7 +679,7 @@ export function HomeLanding() {
               </div>
 
               <div className={styles.faqList}>
-                {faqs.map((f, idx) => {
+                {LANDING_FAQS.map((f, idx) => {
                   const open = openFaq === idx;
                   return (
                     <div
@@ -716,6 +710,67 @@ export function HomeLanding() {
                 })}
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="newsletter" className={`${styles.newsletter} ${styles.sectionAnchor}`}>
+          <div className={`${styles.wrap} ${styles.newsletterInner}`}>
+            <div className={styles.newsletterCopy}>
+              <p className={styles.newsletterEyebrow}>{t('landing.newsletter.kicker')}</p>
+              <h2 className={styles.newsletterTitle}>{t('landing.newsletter.title')}</h2>
+              <p className={styles.newsletterSub}>{t('landing.newsletter.subtitle')}</p>
+            </div>
+            <form className={styles.newsletterForm} onSubmit={submitNewsletter} noValidate>
+              <div className={styles.newsletterRow}>
+                <label htmlFor="landing-newsletter-email" className="sr-only">
+                  {t('landing.newsletter.emailLabel')}
+                </label>
+                <input
+                  id="landing-newsletter-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  required
+                  maxLength={320}
+                  value={nlEmail}
+                  onChange={(ev) => {
+                    setNlEmail(ev.target.value);
+                    if (nlStatus !== 'idle' && nlStatus !== 'loading') {
+                      setNlStatus('idle');
+                    }
+                  }}
+                  placeholder={t('landing.newsletter.placeholder')}
+                  className={styles.newsletterInput}
+                  disabled={nlStatus === 'loading'}
+                />
+                <button
+                  type="submit"
+                  className={styles.newsletterSubmit}
+                  disabled={nlStatus === 'loading'}
+                >
+                  {nlStatus === 'loading'
+                    ? t('landing.newsletter.submitting')
+                    : t('landing.newsletter.submit')}
+                </button>
+              </div>
+              <p className={styles.newsletterHint}>
+                {t('landing.newsletter.hintBefore')}{' '}
+                <Link href="/datenschutz">{t('landing.footer.linkPrivacy')}</Link>
+                {t('landing.newsletter.hintAfter')}
+              </p>
+              <p
+                className={`${styles.newsletterMsg} ${
+                  nlStatus === 'success' ? styles.newsletterMsgOk : ''
+                } ${nlStatus === 'error' || nlStatus === 'network' ? styles.newsletterMsgErr : ''}`}
+                role="status"
+                aria-live="polite"
+              >
+                {nlStatus === 'success' ? t('landing.newsletter.success') : ''}
+                {nlStatus === 'error' ? t('landing.newsletter.error') : ''}
+                {nlStatus === 'network' ? t('landing.newsletter.errorNetwork') : ''}
+              </p>
+            </form>
           </div>
         </section>
 
@@ -754,6 +809,7 @@ export function HomeLanding() {
                   <a href="#tour">{t('landing.footer.anchor.tour')}</a>
                   <a href="#use">{t('landing.footer.anchor.use')}</a>
                   <a href="#faq">{t('landing.footer.anchor.faq')}</a>
+                  <a href="#newsletter">{t('landing.footer.anchor.newsletter')}</a>
                   <a href="#sicherheit">{t('landing.footer.anchor.security')}</a>
                 </div>
                 <div className={styles.footSection}>

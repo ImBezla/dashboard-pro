@@ -71,7 +71,7 @@ Ausführliche Schritte, Umgebungsvariablen und Postgres-Hinweise: **[docs/DEPLOY
 **Hostinger + Domain (z. B. dashboardpro.de):** **[docs/DEPLOYMENT-HOSTINGER.md](docs/DEPLOYMENT-HOSTINGER.md)** · **nginx-Beispiel + Kurzablauf:** **[deploy/hostinger/](deploy/hostinger/)**.  
 **Erster Launch / geschlossene Beta:** **[docs/BETA-LAUNCH.md](docs/BETA-LAUNCH.md)**.  
 **Go-Live-Checkliste („alles“):** **[docs/GO-LIVE-CHECKLIST.md](docs/GO-LIVE-CHECKLIST.md)** · Env prüfen: `npm run deploy:verify`.  
-**VPS-Schrittfolge anzeigen:** `npm run deploy:vps` (mit `.env.deploy`: `npm run deploy:vps:verify`).
+**VPS-Schrittfolge anzeigen:** `npm run deploy:vps` (mit `.env.deploy`: `npm run deploy:vps:verify`). **Update (meist nur `git pull` auf dem VPS):** `npm run deploy:vps:update`.
 
 Kurz:
 
