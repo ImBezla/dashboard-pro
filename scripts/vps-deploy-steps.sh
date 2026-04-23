@@ -120,8 +120,11 @@ Voraussetzungen auf dem VPS
 
      API startet nicht, Logs: Prisma **P3009** / fehlgeschlagene Migration **20251117120204_init**:
        git pull   (Skript muss im Repo liegen)
-       npm run deploy:prisma:fix-p3009-init
+       Ohne npm auf dem VPS:
+         bash scripts/prisma-resolve-failed-migration.sh rolled-back 20251117120204_init
+       Mit npm: npm run deploy:prisma:fix-p3009-init
        docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d api
+       sleep 90 && docker compose … logs --tail=50 api && curl -sS http://127.0.0.1:3002/health
        (Details: docs/DEPLOYMENT.md → Troubleshooting P3009)
 
 6) Öffentlich mit HTTPS

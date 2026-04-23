@@ -44,6 +44,42 @@ export DATABASE_URL='postgresql://postgres:…@db….supabase.co:5432/postgres?s
 bash scripts/supabase-migrate-deploy.sh
 ```
 
+## P3009 / fehlgeschlagene `20251117120204_init` — Schleife nach `rolled-back`
+
+**Symptom:** `migrate resolve --rolled-back 20251117120204_init` klappt, danach startet die API, aber kurz darauf wieder **P3009** — oft mit **neuem** `started_at`-Zeitstempel (z. B. von heute statt vom ersten Versuch).
+
+**Ursache:** Nach `rolled-back` führt **`prisma migrate deploy`** die Init-Migration **noch einmal** aus. Wenn dabei z. B. **`relation "User" already exists`** auftritt (teilweise angewandte alte Versuche), schlägt die Migration wieder fehl und landet erneut als „failed“ in `_prisma_migrations`.
+
+**Nicht** endlos `rolled-back` wiederholen — das erzeugt nur wieder denselben Fehler.
+
+### Option A — Daten wegwerfen, sauberer Neustart (üblich für leere Test-DB)
+
+1. In **Supabase → SQL Editor** das Skript ausführen: **`scripts/supabase-wipe-public-schema.sql`** (Inhalt kopieren, prüfen, ausführen).
+2. Auf dem VPS: `docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d api` (oder `up -d --build`).
+3. Logs prüfen, bis **`migrate deploy fertig`** / **`API Server running`** erscheint; dann `curl http://127.0.0.1:3002/health`.
+
+### Option B — Tabellen von `init` sind vollständig da, nur der Prisma-Eintrag stimmt nicht
+
+Nur wenn du den Tabellenstand wirklich mit **`20251117120204_init`** abgleichen kannst:
+
+```bash
+docker compose --env-file .env.deploy -f docker-compose.deploy.yml run --rm --no-deps --entrypoint "" api \
+  sh -lc 'cd /app/apps/api && /app/node_modules/.bin/prisma migrate resolve --applied 20251117120204_init --schema=prisma/schema.prisma'
+```
+
+Danach wieder `up -d api`. Bei Abweichungen brechen **spätere** Migrationen ggf. ab — dann eher Option A.
+
+### Option C — echte Fehlermeldung der Init-SQL sehen
+
+Einmal im Vordergrund (nachdem P3009-Zeilen bereinigt oder nach frischem Schema):
+
+```bash
+docker compose --env-file .env.deploy -f docker-compose.deploy.yml run --rm --no-deps --entrypoint "" api \
+  sh -lc 'cd /app/apps/api && DEBUG="prisma:migrate*" /app/node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma'
+```
+
+Die **erste** Postgres-Fehlzeile (vor erneutem P3009) ist entscheidend.
+
 ## Bestehende SQLite-Daten
 
 Die alte **SQLite**-Datei wird **nicht** automatisch importiert. Optionen:

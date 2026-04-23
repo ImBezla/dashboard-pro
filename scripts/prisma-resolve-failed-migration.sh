@@ -11,6 +11,10 @@
 #
 # --rolled-back: Migration war fehlgeschlagen / soll erneut mit migrate deploy angewendet werden.
 # --applied:     Migration ist faktisch schon in der DB (nur Eintrag korrigieren) — nur nach Prüfung!
+#
+# Schleife vermeiden: Nach --rolled-back führt der nächste migrate deploy die Migration erneut aus.
+# Wenn dabei SQL fehlschlägt (z. B. "relation User already exists"), entsteht wieder P3009.
+# Dann docs/SUPABASE.md → „P3009 / init — Schleife“ (Schema public wipen oder --applied).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -63,6 +67,13 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps --en
   sh -lc "cd /app/apps/api && exec /app/node_modules/.bin/prisma migrate resolve $FLAG \"$MIGRATION\" --schema=prisma/schema.prisma"
 
 echo ""
-echo "Fertig. API neu starten:"
+echo "Fertig. Auf dem VPS ist kein npm nötig — nur docker compose."
+echo "API neu starten, dann warten (migrate deploy kann 1–3 Minuten dauern), dann prüfen:"
 echo "  docker compose --env-file $ENV_FILE -f $COMPOSE_FILE up -d api"
+echo "  sleep 90"
+echo "  docker compose --env-file $ENV_FILE -f $COMPOSE_FILE ps"
+echo "  docker compose --env-file $ENV_FILE -f $COMPOSE_FILE logs --tail=40 api"
 echo "  curl -sS http://127.0.0.1:3002/health"
+echo ""
+echo "Hinweis: curl sofort nach up zeigt oft connection refused — Node lauscht erst nach erfolgreichem migrate deploy."
+echo "Wenn Logs „relation … already exists“: Init war teilweise drin — nicht erneut rolled-back; Supabase SQL / Prisma-Doku migrate-resolve."
