@@ -132,4 +132,5 @@ Clients verbinden mit dem **gleichen JWT** wie REST (`NEXT_PUBLIC_API_URL` muss 
 | 403 / leere Seite auf `public_html` | Falsches Hosting: App braucht **VPS + Docker + nginx**, nicht Shared-Webspace. |
 | 401 / Login | `JWT_SECRET` Web = API; Cookies / HTTPS SameSite. |
 | Prisma migrate schlägt fehl | Migrationen auf dem Ziel-DB-Typ; keine gemischten Provider ohne Plan. |
+| **P3009** (fehlgeschlagene Migration, API-Restart-Schleife) | Im Repo-Root: **`npm run deploy:prisma:fix-p3009-init`** bzw. **`bash scripts/prisma-resolve-failed-migration.sh rolled-back <name>`** (Docker + `.env.deploy`), danach **`docker compose … up -d api`**. Nur bei leerer/wegwerfbarer DB oder nach Prüfung in `_prisma_migrations`; bei **`relation already exists`** nicht blind **`rolled-back`** — siehe [Prisma migrate resolve](https://pris.ly/d/migrate-resolve). |
 | Web ruft falsche API auf | `NEXT_PUBLIC_API_URL` **neu builden**, nicht nur zur Laufzeit ändern. |

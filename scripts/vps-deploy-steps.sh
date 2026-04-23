@@ -118,6 +118,12 @@ Voraussetzungen auf dem VPS
      curl -sS http://127.0.0.1:3002/health
      curl -sS -o /dev/null -w "Web HTTP %{http_code}\n" http://127.0.0.1:3000/
 
+     API startet nicht, Logs: Prisma **P3009** / fehlgeschlagene Migration **20251117120204_init**:
+       git pull   (Skript muss im Repo liegen)
+       npm run deploy:prisma:fix-p3009-init
+       docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d api
+       (Details: docs/DEPLOYMENT.md → Troubleshooting P3009)
+
 6) Öffentlich mit HTTPS
      docs/DEPLOYMENT-HOSTINGER.md
      docs/GO-LIVE-CHECKLIST.md
