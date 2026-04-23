@@ -9,43 +9,17 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+    # Alle Secrets/URLs aus .env.deploy — ohne ${DATABASE_URL} in YAML (Compose würde $/@ in Werten falsch parsen).
+    env_file:
+      - .env.deploy
     # Standard: nur localhost (mit nginx/Caddy auf dem VPS davor). Von außen testen: API_PUBLISH_BIND=0.0.0.0
     ports:
       - "${API_PUBLISH_BIND:-127.0.0.1}:${API_PUBLISH_PORT:-3002}:3002"
     environment:
       NODE_ENV: production
       CI: "true"
-      # Postgres/Supabase: Advisory-Lock für migrate deploy aktiv (Standard 0).
-      PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-0}"
-      # Aus .env.deploy (nie hier committen). Supabase Session Pooler → docs/SUPABASE.md
-      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL fehlt in .env.deploy}"
-      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy}"
-      FRONTEND_URL: "${FRONTEND_URL:?FRONTEND_URL fehlt in .env.deploy (https-URL der Web-App)}"
-      # Optional: zweite kanonische Web-URL (z. B. www vs. Apex) für CORS — siehe apps/api/src/main.ts
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
-      ADDITIONAL_CORS_ORIGINS: ${ADDITIONAL_CORS_ORIGINS:-}
       PORT: "3002"
-      # smtp = nur Gmail/SMTP (ohne Resend); leer = Resend zuerst wenn RESEND_API_KEY gesetzt
-      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      # Gmail ohne SMTP_HOST: muss explizit in den Container (wie SMTP_*)
-      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-}
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      RESEND_FROM: ${RESEND_FROM:-}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
-      # Ohne SMTP: true = sofort Login nach Registrierung (nur intern/testen).
-      SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-false}
-      # Nach Double-Opt-in: Benachrichtigung an diese Adresse (z. B. dein Gmail)
-      NEWSLETTER_ADMIN_EMAIL: ${NEWSLETTER_ADMIN_EMAIL:-}
-      # Kommagetrennte E-Mails mit Plattform-Admin (zusätzlich zu User.role === ADMIN)
-      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
+      PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "${PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK:-0}"
     # Optional: persistenter Speicher (z. B. später lokale Uploads unter /data); DB liegt bei Supabase.
     volumes:
       - dashboardpro_api_data:/data
@@ -68,15 +42,13 @@ services:
       args:
         NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL fehlt in .env.deploy}"
         NEXT_PUBLIC_SITE_URL: "${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL fehlt in .env.deploy}"
+    env_file:
+      - .env.deploy
     ports:
       - "${WEB_PUBLISH_BIND:-127.0.0.1}:${WEB_PUBLISH_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       PORT: "3000"
-      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET fehlt in .env.deploy muss mit API übereinstimmen}"
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
-      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
     healthcheck:
       test:
         [

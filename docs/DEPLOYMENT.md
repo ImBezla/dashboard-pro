@@ -62,6 +62,8 @@ docker compose --env-file .env.deploy -f docker-compose.deploy.yml up -d
 
 `NEXT_PUBLIC_*` werden beim **Build** des Web-Images gesetzt (`docker-compose.deploy.yml` → `build.args`). Nach URL-Änderungen **Web-Image neu bauen**.
 
+**Hinweis:** API- und Web-Container laden **`env_file: .env.deploy`**, damit **`DATABASE_URL`** (mit `@`, `:`, ggf. `$` im Passwort) nicht durch Compose-Interpolation in der YAML kaputtgeht.
+
 ### Nur API-Image bauen
 
 ```bash
