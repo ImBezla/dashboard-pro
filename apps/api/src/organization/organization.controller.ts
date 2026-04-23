@@ -4,6 +4,7 @@ import {
   Post,
   Patch,
   Body,
+  Param,
   UseGuards,
   Request,
   ForbiddenException,
@@ -16,8 +17,11 @@ import { UpdateOrgPackDto } from './dto/update-org-pack.dto';
 import { UpdateOrgModulesDto } from './dto/update-org-modules.dto';
 import { SuggestModulesDto } from './dto/suggest-modules.dto';
 import { UpdateWorkspaceAppearanceDto } from './dto/update-workspace-appearance.dto';
+import { UpdateOrgMemberRoleDto } from './dto/update-org-member-role.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgGuard } from '../auth/guards/org.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuditService } from '../audit/audit.service';
 import { getRequestIp } from '../common/request-ip.util';
 
@@ -39,6 +43,24 @@ export class OrganizationController {
   @Post('join')
   join(@Request() req: any, @Body() dto: JoinOrganizationDto) {
     return this.organizationService.joinWithCode(req.user.id, dto);
+  }
+
+  @Throttle({ default: { limit: 40, ttl: 60_000 } })
+  @UseGuards(JwtAuthGuard, OrgGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @Patch('members/:userId/org-role')
+  updateMemberOrgRole(
+    @Request() req: any,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateOrgMemberRoleDto,
+  ) {
+    return this.organizationService.updateOrganizationMemberRole(
+      req.user.id,
+      req.user.organizationId,
+      req.user.orgRole ?? null,
+      userId,
+      dto.role,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

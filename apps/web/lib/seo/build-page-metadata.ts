@@ -72,11 +72,13 @@ export function buildPageMetadata(input: {
 export function buildHomeMetadata(input: {
   titleAbsolute: string;
   description: string;
+  keywords?: string[];
 }): Metadata {
   const base = getSiteUrl().replace(/\/$/, '');
   return {
     title: { absolute: input.titleAbsolute },
     description: input.description,
+    keywords: input.keywords,
     alternates: { canonical: base },
     openGraph: {
       type: 'website',
@@ -93,6 +95,17 @@ export function buildHomeMetadata(input: {
       title: SITE_NAME,
       description: input.description,
       images: ['/twitter-image'],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
   };
 }

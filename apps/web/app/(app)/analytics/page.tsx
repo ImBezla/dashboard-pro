@@ -22,6 +22,24 @@ import {
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
+function sumSeriesValues(data: { value?: number }[]) {
+  return data.reduce((s, d) => s + (d.value ?? 0), 0);
+}
+
+function AnalyticsEmptyChart({ message }: { message: string }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center min-h-[220px] px-4 py-8 rounded-xl border border-dashed border-border bg-slate-50/60 text-center"
+      role="status"
+    >
+      <span className="text-2xl mb-2 opacity-40 select-none" aria-hidden>
+        —
+      </span>
+      <p className="text-sm text-text-light">{message}</p>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
@@ -212,38 +230,44 @@ export default function AnalyticsPage() {
 
   const timeSeriesData = calculateTimeSeriesData();
 
+  const projectCount = projects?.length ?? 0;
+  const taskCount = tasks?.length ?? 0;
+  const hasProjects = projectCount > 0;
+  const hasTasks = taskCount > 0;
+  const priorityTotal =
+    (taskPriorityData.HIGH || 0) + (taskPriorityData.MEDIUM || 0) + (taskPriorityData.LOW || 0);
+
   const pieData = [
     { name: 'Aktiv', value: projectStatusData.ACTIVE || 0 },
     { name: 'Wartend', value: projectStatusData.PENDING || 0 },
     { name: 'Abgeschlossen', value: projectStatusData.COMPLETED || 0 },
     { name: 'Archiviert', value: projectStatusData.ARCHIVED || 0 },
   ];
+  const projectPieTotal = sumSeriesValues(pieData);
 
   const taskPieData = [
     { name: 'Offen', value: taskStatusData.OPEN || 0 },
     { name: 'In Bearbeitung', value: taskStatusData.IN_PROGRESS || 0 },
     { name: 'Erledigt', value: taskStatusData.DONE || 0 },
   ];
+  const taskPieTotal = sumSeriesValues(taskPieData);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" data-tour="page-analytics">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-text-light animate-pulse">Lädt Analytics-Daten...</div>
+          <div className="text-text-light animate-pulse">Lädt…</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div data-tour="page-analytics">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-black text-dark mb-2">Analytics</h1>
-          <p className="text-lg text-text-light">
-            Detaillierte Analysen und Statistiken
-          </p>
+          <h1 className="text-3xl font-black text-dark">Analytics</h1>
         </div>
         <div className="flex gap-2">
           {(['week', 'month', 'quarter', 'year'] as const).map((range) => (
@@ -268,28 +292,28 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <MetricCard
           title="Projekte im Zeitraum"
-          value={filteredProjects.length}
-          subtitle={`von ${projects?.length || 0} gesamt`}
+          value={hasProjects ? filteredProjects.length : '—'}
+          subtitle={hasProjects ? `${projectCount} gesamt` : undefined}
           icon="📁"
         />
         <MetricCard
           title="Aufgaben im Zeitraum"
-          value={filteredTasks.filter((t: any) => t.status !== 'DONE').length}
-          subtitle="Offen/In Bearbeitung"
+          value={hasTasks ? filteredTasks.filter((t: any) => t.status !== 'DONE').length : '—'}
+          subtitle={hasTasks ? 'Offen / aktiv' : undefined}
           icon="✅"
           gradient="bg-gradient-to-br from-green-500 to-green-600"
         />
         <MetricCard
           title="Erledigt im Zeitraum"
-          value={filteredTasks.filter((t: any) => t.status === 'DONE').length}
-          subtitle={`von ${filteredTasks.length} Aufgaben`}
+          value={hasTasks ? filteredTasks.filter((t: any) => t.status === 'DONE').length : '—'}
+          subtitle={hasTasks ? `${filteredTasks.length} im Zeitraum` : undefined}
           icon="✓"
           gradient="bg-gradient-to-br from-blue-500 to-blue-600"
         />
         <MetricCard
           title="Team Performance"
           value={`${dashboardData?.teamPerformance || 0}%`}
-          subtitle="Durchschnitt"
+          subtitle="Ø"
           icon="👥"
           gradient="bg-gradient-to-br from-purple-500 to-purple-600"
         />
@@ -298,98 +322,120 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-2xl p-6 shadow border border-border">
           <h2 className="text-xl font-bold text-dark mb-4">Aufgaben-Trend</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={timeSeriesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="tasks" stroke="#6366f1" name="Aufgaben" />
-              <Line type="monotone" dataKey="completed" stroke="#10b981" name="Erledigt" />
-            </LineChart>
-          </ResponsiveContainer>
+          {hasTasks && timeSeriesData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={timeSeriesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="tasks" stroke="#6366f1" name="Aufgaben" />
+                <Line type="monotone" dataKey="completed" stroke="#10b981" name="Erledigt" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <AnalyticsEmptyChart message="Keine Aufgaben" />
+          )}
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow border border-border">
           <h2 className="text-xl font-bold text-dark mb-4">Projekt-Status</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {hasProjects && projectPieTotal > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <AnalyticsEmptyChart message={hasProjects ? 'Keine Status-Daten' : 'Keine Projekte'} />
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-2xl p-6 shadow border border-border">
           <h2 className="text-xl font-bold text-dark mb-4">Projekt-Fortschritt</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={projectProgressData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="progress" fill="#6366f1" name="Fortschritt %" />
-              <Bar dataKey="tasks" fill="#8b5cf6" name="Aufgaben" />
-            </BarChart>
-          </ResponsiveContainer>
+          {hasProjects ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={projectProgressData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="progress" fill="#6366f1" name="Fortschritt %" />
+                <Bar dataKey="tasks" fill="#8b5cf6" name="Aufgaben" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <AnalyticsEmptyChart message="Keine Projekte" />
+          )}
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow border border-border">
           <h2 className="text-xl font-bold text-dark mb-4">Aufgaben-Status</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={taskPieData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {taskPieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {hasTasks && taskPieTotal > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={taskPieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {taskPieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <AnalyticsEmptyChart message={hasTasks ? 'Keine Status-Werte' : 'Keine Aufgaben'} />
+          )}
         </div>
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow border border-border">
         <h2 className="text-xl font-bold text-dark mb-4">Aufgaben-Priorität</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={[
-            { name: 'Hoch', value: taskPriorityData.HIGH || 0 },
-            { name: 'Mittel', value: taskPriorityData.MEDIUM || 0 },
-            { name: 'Niedrig', value: taskPriorityData.LOW || 0 },
-          ]}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="value" fill="#6366f1" />
-          </BarChart>
-        </ResponsiveContainer>
+        {hasTasks && priorityTotal > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={[
+                { name: 'Hoch', value: taskPriorityData.HIGH || 0 },
+                { name: 'Mittel', value: taskPriorityData.MEDIUM || 0 },
+                { name: 'Niedrig', value: taskPriorityData.LOW || 0 },
+              ]}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#6366f1" />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <AnalyticsEmptyChart message={hasTasks ? 'Keine Prioritäten' : 'Keine Aufgaben'} />
+        )}
       </div>
     </div>
   );

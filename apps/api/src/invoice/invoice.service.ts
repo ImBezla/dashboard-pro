@@ -2,10 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class InvoiceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+  ) {}
 
   private generateInvoiceNumber(): string {
     const date = new Date();
@@ -17,7 +21,12 @@ export class InvoiceService {
     return `INV-${year}${month}-${random}`;
   }
 
-  async create(dto: CreateInvoiceDto, organizationId: string) {
+  async create(
+    dto: CreateInvoiceDto,
+    organizationId: string,
+    userId: string,
+    ipAddress?: string | null,
+  ) {
     const customer = await this.prisma.customer.findFirst({
       where: { id: dto.customerId, organizationId },
     });
@@ -25,7 +34,7 @@ export class InvoiceService {
       throw new NotFoundException('Kunde nicht gefunden');
     }
 
-    return this.prisma.invoice.create({
+    const inv = await this.prisma.invoice.create({
       data: {
         invoiceNumber: this.generateInvoiceNumber(),
         customerId: dto.customerId,
@@ -39,6 +48,14 @@ export class InvoiceService {
         customer: true,
       },
     });
+    void this.audit.log({
+      userId,
+      organizationId,
+      action: 'invoice.create',
+      metadata: { invoiceId: inv.id, invoiceNumber: inv.invoiceNumber },
+      ipAddress: ipAddress ?? undefined,
+    });
+    return inv;
   }
 
   async findAll(organizationId: string, status?: string) {
@@ -68,7 +85,13 @@ export class InvoiceService {
     };
   }
 
-  async update(id: string, dto: UpdateInvoiceDto, organizationId: string) {
+  async update(
+    id: string,
+    dto: UpdateInvoiceDto,
+    organizationId: string,
+    userId: string,
+    ipAddress?: string | null,
+  ) {
     await this.findOne(id, organizationId);
     const updateData: any = {};
 
@@ -79,16 +102,36 @@ export class InvoiceService {
     if ((dto as any).items)
       updateData.items = JSON.stringify((dto as any).items);
 
-    return this.prisma.invoice.update({
+    const inv = await this.prisma.invoice.update({
       where: { id },
       data: updateData,
       include: { customer: true },
     });
+    void this.audit.log({
+      userId,
+      organizationId,
+      action: 'invoice.update',
+      metadata: { invoiceId: id, fields: Object.keys(updateData) },
+      ipAddress: ipAddress ?? undefined,
+    });
+    return inv;
   }
 
-  async remove(id: string, organizationId: string) {
+  async remove(
+    id: string,
+    organizationId: string,
+    userId: string,
+    ipAddress?: string | null,
+  ) {
     await this.findOne(id, organizationId);
     await this.prisma.invoice.delete({ where: { id } });
+    void this.audit.log({
+      userId,
+      organizationId,
+      action: 'invoice.delete',
+      metadata: { invoiceId: id },
+      ipAddress: ipAddress ?? undefined,
+    });
     return { message: 'Invoice deleted successfully' };
   }
 }

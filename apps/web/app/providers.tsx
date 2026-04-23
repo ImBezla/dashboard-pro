@@ -7,6 +7,7 @@ import {
   applyDocumentTheme,
   readStoredDocumentTheme,
 } from '@/lib/theme-document';
+import { PublicMarketingRouteEnter } from '@/components/layout/PublicMarketingRouteEnter';
 
 function DocumentThemeSync() {
   useEffect(() => {
@@ -46,7 +47,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <LocaleProvider>
         <DocumentThemeSync />
-        {children}
+        <PublicMarketingRouteEnter>{children}</PublicMarketingRouteEnter>
       </LocaleProvider>
     </QueryClientProvider>
   );

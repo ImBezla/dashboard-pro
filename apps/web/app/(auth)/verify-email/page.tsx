@@ -8,9 +8,20 @@ import { API_BASE_URL } from '@/lib/api-base-url';
 
 const API_URL = API_BASE_URL;
 
+function normalizeTokenFromUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  const t = raw.trim();
+  if (!t) return null;
+  try {
+    return decodeURIComponent(t);
+  } catch {
+    return t;
+  }
+}
+
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const token = normalizeTokenFromUrl(searchParams.get('token'));
   const [status, setStatus] = useState<
     'loading' | 'ok' | 'err' | 'missing'
   >('loading');
@@ -19,7 +30,7 @@ function VerifyEmailContent() {
   useEffect(() => {
     if (!token) {
       setStatus('missing');
-      setMessage('Kein Bestätigungstoken in der URL.');
+      setMessage('Link ungültig oder abgelaufen.');
       return;
     }
 
@@ -30,6 +41,7 @@ function VerifyEmailContent() {
         const res = await fetch(`${API_URL}/auth/verify-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          mode: 'cors',
           body: JSON.stringify({ token }),
         });
         const data = await res.json().catch(() => ({}));
@@ -54,7 +66,7 @@ function VerifyEmailContent() {
       } catch {
         if (!cancelled) {
           setStatus('err');
-          setMessage('Keine Verbindung zur API. Bitte später erneut versuchen.');
+          setMessage('Keine Verbindung zur API.');
         }
       }
     })();

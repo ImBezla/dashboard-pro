@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgGuard } from '../auth/guards/org.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { getRequestIp } from '../common/request-ip.util';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard, OrgGuard, RolesGuard)
@@ -24,7 +25,12 @@ export class ProjectController {
 
   @Post()
   create(@Request() req: any, @Body() dto: CreateProjectDto) {
-    return this.projectService.create(dto, req.user.organizationId);
+    return this.projectService.create(
+      dto,
+      req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
+    );
   }
 
   @Get()
@@ -48,12 +54,18 @@ export class ProjectController {
       dto,
       req.user.organizationId,
       req.user.id,
+      getRequestIp(req),
     );
   }
 
   @Delete(':id')
   @Roles('ADMIN', 'MANAGER')
   remove(@Request() req: any, @Param('id') id: string) {
-    return this.projectService.remove(id, req.user.organizationId);
+    return this.projectService.remove(
+      id,
+      req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
+    );
   }
 }

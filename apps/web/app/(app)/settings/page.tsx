@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useLayoutEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuthStore, type NotificationPreferencesState } from '@/lib/store';
@@ -15,6 +15,7 @@ import {
   applyDocumentTheme,
   DASHBOARD_PREFERENCES_KEY,
 } from '@/lib/theme-document';
+import { requestProductTourRestart } from '@/lib/product-tour-storage';
 
 const PREFERENCES_KEY = DASHBOARD_PREFERENCES_KEY;
 
@@ -87,14 +88,29 @@ function IconAuto({ className }: { className?: string }) {
   );
 }
 
-export default function SettingsPage() {
+const SETTINGS_TAB_KEYS = [
+  'profile',
+  'personalization',
+  'security',
+  'notifications',
+  'workspace',
+] as const;
+
+type SettingsTabKey = (typeof SETTINGS_TAB_KEYS)[number];
+
+function isSettingsTabKey(v: string): v is SettingsTabKey {
+  return (SETTINGS_TAB_KEYS as readonly string[]).includes(v);
+}
+
+function SettingsPageInner() {
   const { t } = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const logoutStore = useAuthStore((state) => state.logout);
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'security' | 'notifications' | 'preferences' | 'workspace'
+    'profile' | 'personalization' | 'security' | 'notifications' | 'workspace'
   >('profile');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -103,6 +119,8 @@ export default function SettingsPage() {
     name: user?.name || '',
     email: user?.email || '',
   });
+  const [avatarDraft, setAvatarDraft] = useState('');
+  const [avatarPreviewError, setAvatarPreviewError] = useState(false);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -195,6 +213,8 @@ export default function SettingsPage() {
         name: user.name || '',
         email: user.email || '',
       });
+      setAvatarDraft(user.avatar ?? '');
+      setAvatarPreviewError(false);
     }
   }, [user]);
 
@@ -217,16 +237,16 @@ export default function SettingsPage() {
   };
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: Record<string, string>) => {
       const response = await api.patch('/users/me', data);
       return response.data;
     },
     onSuccess: (data) => {
       setSuccess(t('settings.profileUpdated'));
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const currentUser = JSON.parse(userStr);
-        localStorage.setItem('user', JSON.stringify({ ...currentUser, ...data }));
+      const token = useAuthStore.getState().token;
+      const u = useAuthStore.getState().user;
+      if (token && u) {
+        useAuthStore.getState().setAuth({ ...u, ...data }, token);
       }
       queryClient.invalidateQueries({ queryKey: ['user'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -264,6 +284,30 @@ export default function SettingsPage() {
     updateProfileMutation.mutate(profileData);
   };
 
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (avatar: string) => {
+      const response = await api.patch('/users/me', { avatar: avatar.trim() });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setSuccess(t('settings.profileUpdated'));
+      const token = useAuthStore.getState().token;
+      const u = useAuthStore.getState().user;
+      if (token && u) {
+        useAuthStore.getState().setAuth({ ...u, ...data }, token);
+      }
+      setAvatarDraft((data as { avatar?: string | null }).avatar ?? '');
+      setAvatarPreviewError(false);
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setTimeout(() => setSuccess(''), 3000);
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || t('settings.profileError'));
+      setTimeout(() => setError(''), 5000);
+    },
+  });
+
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -288,6 +332,18 @@ export default function SettingsPage() {
   const canManageInvite =
     !!user?.organizationId &&
     (user.orgRole === 'OWNER' || user.orgRole === 'ADMIN');
+
+  useLayoutEffect(() => {
+    const raw = searchParams.get('tab');
+    if (raw === 'preferences') {
+      setActiveTab('personalization');
+      router.replace('/settings?tab=personalization', { scroll: false });
+      return;
+    }
+    if (!raw || !isSettingsTabKey(raw)) return;
+    if (raw === 'workspace' && !canManageInvite) return;
+    setActiveTab(raw);
+  }, [searchParams, canManageInvite, router]);
 
   const canManageWorkspaceModules =
     !!user?.organizationId && user.orgRole === 'OWNER';
@@ -411,7 +467,10 @@ export default function SettingsPage() {
         <p className="text-lg text-text-light">{t('settings.pageSubtitle')}</p>
       </div>
 
-      <div className="-mx-1 mb-6 overflow-x-auto pb-1">
+      <div
+        className="-mx-1 mb-6 overflow-x-auto pb-1"
+        data-tour="settings-tabs"
+      >
         <SegmentedControl
           aria-label={t('settings.tabs.label')}
           className="min-w-max sm:min-w-0 sm:max-w-4xl"
@@ -419,9 +478,9 @@ export default function SettingsPage() {
           onChange={(tab) => setActiveTab(tab)}
           options={[
             { value: 'profile', label: t('settings.tab.profile') },
+            { value: 'personalization', label: t('settings.tab.personalization') },
             { value: 'security', label: t('settings.tab.security') },
             { value: 'notifications', label: t('settings.tab.notifications') },
-            { value: 'preferences', label: t('settings.tab.preferences') },
             ...(canManageInvite ? [{ value: 'workspace' as const, label: t('settings.tab.workspace') }] : []),
           ]}
         />
@@ -441,6 +500,7 @@ export default function SettingsPage() {
 
       <div className="rounded-2xl border border-border bg-white p-6 shadow dark:border-zinc-700/80 dark:bg-[var(--bg-card)] dark:shadow-none">
         {activeTab === 'profile' && (
+          <>
           <form onSubmit={handleProfileSubmit} className="space-y-6">
             <h2 className="text-xl font-bold text-dark mb-4">{t('settings.profile.title')}</h2>
             <div>
@@ -477,6 +537,7 @@ export default function SettingsPage() {
                 : t('settings.profile.save')}
             </button>
           </form>
+          </>
         )}
 
         {activeTab === 'security' && (
@@ -775,7 +836,7 @@ export default function SettingsPage() {
         )}
 
         {activeTab === 'workspace' && canManageInvite && (
-          <div className="space-y-10">
+          <div className="space-y-10" data-tour="settings-workspace">
             {canManageWorkspaceModules && (
               <div>
                 <h2 className="text-xl font-bold text-dark mb-2">
@@ -1033,9 +1094,12 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <h2 className="text-xl font-bold text-dark mb-4 mt-10">{t('settings.workspace.joinTitle')}</h2>
-            <p className="text-text-light text-sm mb-4">{t('settings.workspace.joinIntro')}</p>
-            {workspace?.organization?.joinCode ? (
+            <div data-tour="workspace-invite-code">
+              <h2 className="text-xl font-bold text-dark mb-4 mt-10">
+                {t('settings.workspace.joinTitle')}
+              </h2>
+              <p className="text-text-light text-sm mb-4">{t('settings.workspace.joinIntro')}</p>
+              {workspace?.organization?.joinCode ? (
               <div className="space-y-4">
                 <div className="p-4 bg-light rounded-xl border border-border">
                   <div className="text-xs font-semibold text-text-light uppercase mb-2">
@@ -1084,12 +1148,77 @@ export default function SettingsPage() {
             ) : (
               <p className="text-text-light text-sm">{t('settings.workspace.loading')}</p>
             )}
+            </div>
           </div>
         )}
 
-        {activeTab === 'preferences' && (
+        {activeTab === 'personalization' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-dark mb-4">{t('settings.preferences.title')}</h2>
+            <h2 className="text-xl font-bold text-dark mb-2">{t('settings.personalization.title')}</h2>
+            <p className="mb-6 text-sm text-text-light dark:text-zinc-400">
+              {t('settings.personalization.intro')}
+            </p>
+
+            <div className="mb-8 rounded-xl border border-border bg-light p-4 dark:border-zinc-700/80 dark:bg-[#0c121e]">
+              <h3 className="text-sm font-semibold text-text dark:text-zinc-100">
+                {t('settings.personalization.avatarLabel')}
+              </h3>
+              <p className="mt-1 text-xs text-text-light dark:text-zinc-400">
+                {t('settings.personalization.avatarHint')}
+              </p>
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="flex shrink-0 flex-col items-center gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-text-light dark:text-zinc-500">
+                    {t('settings.personalization.avatarPreview')}
+                  </span>
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-white text-lg font-bold text-primary dark:border-zinc-600 dark:bg-[#0b1220]">
+                    {!avatarPreviewError && avatarDraft.trim() ? (
+                      <img
+                        src={avatarDraft.trim()}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={() => setAvatarPreviewError(true)}
+                        onLoad={() => setAvatarPreviewError(false)}
+                      />
+                    ) : (
+                      <span aria-hidden>{(user?.name || user?.email || '?').charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1 space-y-3">
+                  <input
+                    type="url"
+                    inputMode="url"
+                    autoComplete="photo"
+                    placeholder="https://…"
+                    value={avatarDraft}
+                    onChange={(e) => {
+                      setAvatarDraft(e.target.value);
+                      setAvatarPreviewError(false);
+                    }}
+                    className={SETTINGS_TEXT_INPUT_CLASS}
+                  />
+                  <button
+                    type="button"
+                    disabled={updateAvatarMutation.isPending}
+                    onClick={() => {
+                      setError('');
+                      setSuccess('');
+                      updateAvatarMutation.mutate(avatarDraft);
+                    }}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                  >
+                    {updateAvatarMutation.isPending
+                      ? t('settings.personalization.avatarSaving')
+                      : t('settings.personalization.avatarSave')}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-text-light dark:text-zinc-400">
+              {t('settings.preferences.title')}
+            </h3>
             <div className="space-y-6">
               <div>
                 <label className="mb-2 block text-sm font-medium text-text dark:text-zinc-200">
@@ -1146,6 +1275,29 @@ export default function SettingsPage() {
                   {t('settings.preferences.languageHint')}
                 </p>
               </div>
+
+              <div className="rounded-xl border border-border bg-light p-4 dark:border-zinc-700/80 dark:bg-[#0c121e]">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-[14rem]">
+                    <p className="text-sm font-semibold text-text dark:text-zinc-100">
+                      {t('settings.preferences.tourRestartTitle')}
+                    </p>
+                    <p className="mt-1 text-xs text-text-light dark:text-zinc-400">
+                      {t('settings.preferences.tourRestartHint')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      requestProductTourRestart();
+                      router.push('/dashboard');
+                    }}
+                    className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-text hover:bg-light transition-colors dark:border-zinc-700/80 dark:bg-[#0b1220] dark:text-zinc-100 dark:hover:bg-[#111a2c]"
+                  >
+                    {t('settings.preferences.tourRestartCta')}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1161,5 +1313,20 @@ export default function SettingsPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-white rounded-2xl p-8 shadow border border-border text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="text-text-light animate-pulse">Lädt Einstellungen...</div>
+        </div>
+      }
+    >
+      <SettingsPageInner />
+    </Suspense>
   );
 }

@@ -20,4 +20,8 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   teamId?: string;
+
+  @IsOptional()
+  @IsString()
+  dealId?: string;
 }

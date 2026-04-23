@@ -72,6 +72,18 @@ export const SIDEBAR_NAV_SECTIONS: SidebarNavSection[] = [
         hasBadge: true,
         moduleKey: 'notifications',
       },
+      {
+        href: '/command-feed',
+        labelKey: 'nav.command_feed',
+        icon: '⚡',
+        always: true,
+      },
+      {
+        href: '/deals',
+        labelKey: 'nav.deals',
+        icon: '🎯',
+        always: true,
+      },
     ],
   },
   {

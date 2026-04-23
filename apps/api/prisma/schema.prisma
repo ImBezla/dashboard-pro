@@ -32,6 +32,7 @@ model Organization {
   fileAttachments      FileAttachment[]
   securityAuditLogs    SecurityAuditLog[]
   opsWorkspaceState    OpsWorkspaceState?
+  deals                Deal[]
 }
 
 /// Flow-Editor: Nutzer-Flows + Graph + ausgeblendete Demo-IDs pro Organisation (JSON).
@@ -126,6 +127,8 @@ model Team {
   id             String       @id @default(uuid())
   name           String
   organizationId String
+  /// Genau ein Team pro Organisation sollte true sein: Beitritte landen automatisch hier.
+  defaultMemberTeam Boolean   @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -154,15 +157,19 @@ model Project {
   deadline       DateTime?
   teamId         String?
   organizationId String
+  dealId         String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
   tasks        Task[]
   comments     Comment[]
   tags         ProjectTag[]
   timeEntries  TimeEntry[]
+
+  @@index([dealId])
 }
 
 model Task {
@@ -323,6 +330,7 @@ model Customer {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invoices     Invoice[]
+  deals        Deal[]
 }
 
 model Supplier {
@@ -351,13 +359,16 @@ model Invoice {
   dueDate        DateTime?
   items          String?
   organizationId String
+  dealId         String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, invoiceNumber])
+  @@index([dealId])
 }
 
 model Product {
@@ -405,9 +416,58 @@ model FileAttachment {
   path           String
   taskId         String?
   projectId      String?
+  dealId         String?
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@index([dealId])
+}
+
+/// Vertriebs-Deal mit Meilensteinen (Execution, nicht nur CRM-Kontakt).
+model Deal {
+  id               String   @id @default(uuid())
+  organizationId   String
+  customerId       String?
+  title            String
+  description      String?
+  /// OPEN | WON | LOST | ON_HOLD
+  status           String   @default("OPEN")
+  /// 0–100, Abschlusswahrscheinlichkeit
+  probability      Int      @default(50)
+  valueAmount      Float?
+  expectedClose    DateTime?
+  lostReason       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  milestones   DealMilestone[]
+  projects     Project[]
+  invoices     Invoice[]
+  fileAttachments FileAttachment[]
+
+  @@index([organizationId])
+  @@index([customerId])
+}
+
+model DealMilestone {
+  id        String   @id @default(uuid())
+  dealId    String
+  title     String
+  /// PENDING | DONE | BLOCKED
+  status    String   @default("PENDING")
+  sortOrder Int      @default(0)
+  dueDate   DateTime?
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
 }

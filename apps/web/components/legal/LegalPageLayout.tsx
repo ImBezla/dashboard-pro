@@ -35,23 +35,53 @@ export function LegalPageLayout({
   return (
     <div className="min-h-dvh bg-light text-text">
       <header className="border-b border-border bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-[var(--bg-card)]/90">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <Link href="/" className="text-sm font-bold text-primary hover:underline">
-            ← Zur Startseite
-          </Link>
-          <div className="flex items-center gap-4">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/" className="shrink-0" aria-label="Zur Startseite">
+              <img
+                src="/brand/logo-wordmark.svg"
+                alt="Dashboard Pro"
+                width={200}
+                height={40}
+                className="h-7 w-auto sm:h-8"
+                decoding="async"
+              />
+            </Link>
+            <Link
+              href="/"
+              className="hidden text-sm font-semibold text-primary underline-offset-2 hover:underline sm:inline"
+            >
+              Zur Startseite
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link
               href="/register"
-              className="text-sm font-semibold text-text-light hover:text-primary"
+              className="hidden text-sm font-semibold text-text-light hover:text-primary sm:inline"
             >
               Registrieren
             </Link>
             <Link
               href="/login"
-              className="text-sm font-semibold text-text-light hover:text-primary"
+              className="hidden text-sm font-semibold text-text-light hover:text-primary sm:inline"
             >
               Anmelden
             </Link>
+            <div className="flex items-center gap-2 sm:hidden">
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-text-light hover:text-primary"
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-full bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+              >
+                Start
+              </Link>
+            </div>
           </div>
         </div>
         <nav

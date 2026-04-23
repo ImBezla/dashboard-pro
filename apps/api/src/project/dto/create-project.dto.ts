@@ -23,4 +23,8 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  dealId?: string;
 }

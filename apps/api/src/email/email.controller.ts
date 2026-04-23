@@ -65,18 +65,29 @@ export class EmailController {
       success,
       message: success
         ? 'Test-E-Mail wurde gesendet'
-        : 'E-Mail konnte nicht gesendet werden. Bitte prüfen Sie die GMAIL_APP_PASSWORD Konfiguration.',
+        : 'E-Mail konnte nicht gesendet werden. API-Log prüfen; RESEND_API_KEY oder SMTP/Gmail.',
     };
   }
 
   @Get('status')
   getEmailStatus() {
-    const isConfigured = !!process.env.GMAIL_APP_PASSWORD;
+    const configured = this.emailService.isEmailOutboundConfigured();
+    const passRaw = process.env.SMTP_PASS ?? process.env.GMAIL_APP_PASSWORD;
+    const hasPass = Boolean(passRaw?.replace(/\s/g, ''));
+    const resend = Boolean(process.env.RESEND_API_KEY?.trim());
     return {
-      configured: isConfigured,
-      message: isConfigured
-        ? 'E-Mail-Benachrichtigungen sind aktiviert'
-        : 'E-Mail-Benachrichtigungen sind nicht konfiguriert. Bitte setzen Sie GMAIL_APP_PASSWORD in der .env Datei.',
+      configured,
+      message: configured
+        ? resend
+          ? 'Resend ist aktiv (API-Key gesetzt; hat Vorrang vor SMTP).'
+          : 'SMTP-Transporter ist geladen (Registrierung nutzt dieselbe Verbindung).'
+        : 'Kein Versand: RESEND_API_KEY oder SMTP_HOST + SMTP_USER + SMTP_PASS bzw. Gmail ohne SMTP_HOST. Siehe GET /health/email-env.',
+      envPresent: {
+        RESEND_API_KEY: resend,
+        SMTP_HOST: Boolean(process.env.SMTP_HOST?.trim()),
+        SMTP_USER: Boolean(process.env.SMTP_USER?.trim()),
+        SMTP_PASS_or_GMAIL_APP_PASSWORD: hasPass,
+      },
     };
   }
 }

@@ -19,6 +19,8 @@ interface EmailOptions {
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter | null = null;
+  /** Zuletzt bei sendMail() aufgetretener Fehler (nur für Diagnose in nicht-produktiven Umgebungen). */
+  private lastTransportError: string | null = null;
 
   constructor(
     private prisma: PrismaService,
@@ -37,22 +39,26 @@ export class EmailService {
   private buildTransporter(): nodemailer.Transporter | null {
     const smtpHost = process.env.SMTP_HOST?.trim();
     const smtpUser = process.env.SMTP_USER?.trim();
-    const smtpPass = this.normalizeSmtpPass(
-      process.env.SMTP_PASS ?? process.env.GMAIL_APP_PASSWORD,
+    const explicitSmtpPass = process.env.SMTP_PASS?.trim();
+    /** Nicht-leeres SMTP_PASS gewinnt; leerer String zählt als „nicht gesetzt“ (sonst blockiert ?? das App-Passwort). */
+    const authPass = this.normalizeSmtpPass(
+      explicitSmtpPass && explicitSmtpPass.length > 0
+        ? explicitSmtpPass
+        : process.env.GMAIL_APP_PASSWORD,
     );
     const gmailAppPass = this.normalizeSmtpPass(process.env.GMAIL_APP_PASSWORD);
 
-    if (smtpHost && smtpUser && smtpPass) {
+    if (smtpHost && smtpUser && authPass) {
       return nodemailer.createTransport({
         host: smtpHost,
         port: parseInt(process.env.SMTP_PORT || '587', 10),
         secure: process.env.SMTP_SECURE === 'true',
-        auth: { user: smtpUser, pass: smtpPass },
+        auth: { user: smtpUser, pass: authPass },
       });
     }
 
-    // Gmail / Google-Mail ohne eigenen SMTP_HOST: App-Passwort oft in SMTP_PASS *oder* GMAIL_APP_PASSWORD
-    const passForGmail = gmailAppPass ?? (!smtpHost ? smtpPass : undefined);
+    // Gmail / Google-Mail ohne eigenen SMTP_HOST
+    const passForGmail = gmailAppPass ?? (!smtpHost ? authPass : undefined);
     const useGmailService =
       !!smtpUser &&
       !!passForGmail &&
@@ -62,8 +68,12 @@ export class EmailService {
         smtpUser.toLowerCase().includes('@googlemail.com'));
 
     if (useGmailService) {
+      // Expliziter Host statt service:'gmail' — gleiche Logik, teils weniger 535-Probleme hinter Firewalls/IPv6
       return nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        requireTLS: true,
         auth: { user: smtpUser, pass: passForGmail },
       });
     }
@@ -87,9 +97,96 @@ export class EmailService {
     return this.transporter !== null;
   }
 
-  /** True, wenn SMTP (oder Gmail-App-Passwort) gesetzt ist und Versand versucht werden kann. */
+  private hasResendKey(): boolean {
+    return Boolean(process.env.RESEND_API_KEY?.trim());
+  }
+
+  /**
+   * Resend zuerst, außer EMAIL_PROVIDER=smtp — dann nur SMTP/Gmail (z. B. wenn Resend-Sandbox
+   * nur die Konto-Mail erlaubt, ihr aber Gmail an beliebige Adressen nutzen wollt).
+   */
+  private useResendFirst(): boolean {
+    const p = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+    if (p === 'smtp') {
+      return false;
+    }
+    return this.hasResendKey();
+  }
+
+  /**
+   * True, wenn Versand möglich ist: Resend (API) oder klassisches SMTP/Gmail.
+   * Bei EMAIL_PROVIDER=smtp zählt nur SMTP (Resend-Key allein reicht dann nicht).
+   */
+  isEmailOutboundConfigured(): boolean {
+    if (process.env.EMAIL_PROVIDER?.trim().toLowerCase() === 'smtp') {
+      return this.isConfigured();
+    }
+    return this.hasResendKey() || this.isConfigured();
+  }
+
+  /** @deprecated Nutzen Sie isEmailOutboundConfigured() — umfasst jetzt auch Resend. */
   isSmtpConfigured(): boolean {
-    return this.isConfigured();
+    return this.isEmailOutboundConfigured();
+  }
+
+  private defaultResendFrom(): string {
+    const r = process.env.RESEND_FROM?.trim();
+    if (r) {
+      return r.includes('<') ? r : `DashboardPro <${r}>`;
+    }
+    const smtpFrom = process.env.SMTP_FROM?.trim();
+    if (smtpFrom) {
+      return smtpFrom.includes('<') ? smtpFrom : `DashboardPro <${smtpFrom}>`;
+    }
+    return 'DashboardPro <onboarding@resend.dev>';
+  }
+
+  private async sendViaResend(options: EmailOptions): Promise<boolean> {
+    const key = process.env.RESEND_API_KEY!.trim();
+    const from = this.defaultResendFrom();
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: [options.to],
+          subject: options.subject,
+          html: options.html,
+          ...(options.text ? { text: options.text } : {}),
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      if (!res.ok) {
+        const raw =
+          typeof json.message === 'string'
+            ? json.message
+            : JSON.stringify(json);
+        this.lastTransportError =
+          raw.length > 400 ? `${raw.slice(0, 400)}…` : raw;
+        console.error('[email] Resend HTTP', res.status, json);
+        return false;
+      }
+      console.log('📧 Email sent via Resend:', json.id);
+      return true;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.lastTransportError =
+        msg.length > 400 ? `${msg.slice(0, 400)}…` : msg;
+      console.error('[email] Resend fetch failed:', error);
+      return false;
+    }
+  }
+
+  /** Kurztext des letzten Versandfehlers (SMTP oder Resend). */
+  getLastTransportError(): string | null {
+    return this.lastTransportError;
   }
 
   private frontendBaseUrl(): string {
@@ -107,10 +204,8 @@ export class EmailService {
       .replace(/"/g, '&quot;');
   }
 
-  /**
-   * Send an email via configured SMTP or Gmail
-   */
-  async sendEmail(options: EmailOptions): Promise<boolean> {
+  /** Nodemailer (Gmail/SMTP); setzt lastTransportError bei Fehler. */
+  private async sendViaSmtpMail(options: EmailOptions): Promise<boolean> {
     try {
       if (!this.isConfigured()) {
         if (process.env.NODE_ENV !== 'production') {
@@ -118,12 +213,12 @@ export class EmailService {
           console.log(`   To: ${options.to}`);
           console.log(`   Subject: ${options.subject}`);
           console.log(
-            `   (Set SMTP_HOST/SMTP_USER/SMTP_PASS or SMTP_USER+GMAIL_APP_PASSWORD)`,
+            `   (RESEND_API_KEY oder SMTP_HOST/SMTP_USER/SMTP_PASS bzw. Gmail-App-Passwort)`,
           );
           return true;
         }
         console.warn(
-          '[email] SMTP nicht konfiguriert — transaktionale E-Mail wird nicht versendet (keine Empfängerdaten geloggt).',
+          '[email] Kein Versand konfiguriert — transaktionale E-Mail wird nicht versendet (keine Empfängerdaten geloggt).',
         );
         return false;
       }
@@ -141,12 +236,88 @@ export class EmailService {
       return true;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
+      this.lastTransportError =
+        msg.length > 400 ? `${msg.slice(0, 400)}…` : msg;
       console.error(
         `❌ Failed to send email to ${options.to} (${options.subject}): ${msg}`,
         error,
       );
+      if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|getaddrinfo/i.test(msg)) {
+        console.error(
+          '[email] Netzwerk/DNS: SMTP_HOST erreichbar? Firewall/VPN? Bei Gmail: Port 587 + SMTP_SECURE=false oder 465 + SMTP_SECURE=true.',
+        );
+      }
+      if (/Invalid login|535|authentication failed|535-5\.7\.8/i.test(msg)) {
+        console.error(
+          '[email] Auth: SMTP_USER/SMTP_PASS prüfen. Gmail braucht ein App-Passwort (2FA), nicht das normale Passwort.',
+        );
+      }
       return false;
     }
+  }
+
+  /**
+   * Bestätigung & Passwort-Reset: bei Sandbox-Absender + Gmail lieber **sofort SMTP**,
+   * damit die Verifizierung zuverlässig an jede Adresse geht (ohne Resend-Fehler-Roundtrip).
+   */
+  private smtpPreferredForAuthMail(): boolean {
+    if (process.env.EMAIL_PROVIDER?.trim().toLowerCase() === 'smtp') {
+      return true;
+    }
+    if (!this.isConfigured()) {
+      return false;
+    }
+    if (!this.hasResendKey()) {
+      return true;
+    }
+    return this.defaultResendFrom().toLowerCase().includes('onboarding@resend.dev');
+  }
+
+  private async sendAuthTransactionalMail(
+    options: EmailOptions,
+  ): Promise<boolean> {
+    this.lastTransportError = null;
+    if (this.smtpPreferredForAuthMail()) {
+      const ok = await this.sendViaSmtpMail(options);
+      if (ok) {
+        return true;
+      }
+      if (
+        this.hasResendKey() &&
+        process.env.EMAIL_PROVIDER?.trim().toLowerCase() !== 'smtp'
+      ) {
+        this.lastTransportError = null;
+        return this.sendViaResend(options);
+      }
+      return false;
+    }
+    return this.sendEmail(options);
+  }
+
+  /**
+   * Resend zuerst (wenn Key + nicht EMAIL_PROVIDER=smtp), sonst SMTP.
+   * Bei Resend-Sandbox (nur Konto-Mail erlaubt): automatischer Versuch über SMTP/Gmail, falls konfiguriert.
+   */
+  async sendEmail(options: EmailOptions): Promise<boolean> {
+    this.lastTransportError = null;
+    if (this.useResendFirst()) {
+      const ok = await this.sendViaResend(options);
+      if (ok) {
+        return true;
+      }
+      const err = this.lastTransportError ?? '';
+      const resendSandboxBlock =
+        /only send testing emails|your own email address/i.test(err);
+      if (resendSandboxBlock && this.isConfigured()) {
+        console.warn(
+          '[email] Resend-Sandbox blockiert diesen Empfänger — Versand über SMTP/Gmail (Fallback).',
+        );
+        this.lastTransportError = null;
+        return this.sendViaSmtpMail(options);
+      }
+      return false;
+    }
+    return this.sendViaSmtpMail(options);
   }
 
   async sendEmailVerificationEmail(to: string, name: string, rawToken: string) {
@@ -195,7 +366,7 @@ export class EmailService {
       '',
       'Wenn Sie sich nicht registriert haben, ignorieren Sie diese Nachricht.',
     ].join('\n');
-    return this.sendEmail({
+    return this.sendAuthTransactionalMail({
       to,
       subject: 'Bitte E-Mail bestätigen – DashboardPro',
       html,
@@ -250,7 +421,7 @@ export class EmailService {
       '',
       'Wenn Sie das nicht waren, ignorieren Sie diese E-Mail.',
     ].join('\n');
-    return this.sendEmail({
+    return this.sendAuthTransactionalMail({
       to,
       subject: 'Passwort zurücksetzen – DashboardPro',
       html,

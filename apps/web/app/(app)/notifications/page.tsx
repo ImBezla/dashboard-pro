@@ -190,7 +190,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0" data-tour="page-notifications">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-dark mb-1">Benachrichtigungen</h1>

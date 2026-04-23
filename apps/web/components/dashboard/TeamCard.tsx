@@ -4,6 +4,8 @@ interface TeamMember {
   email: string;
   avatar?: string;
   role: string;
+  /** Rolle im Workspace (Organisation) */
+  orgRole?: string | null;
   teamName: string;
   projectsCount: number;
   performance: number;
@@ -54,7 +56,10 @@ export function TeamCard({ member, onClick }: TeamCardProps) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-dark truncate">{member.name}</div>
-          <div className="text-xs text-text-light truncate">{member.role}</div>
+          <div className="text-xs text-text-light truncate">
+            Team: {member.role}
+            {member.orgRole ? ` · Workspace: ${member.orgRole}` : ''}
+          </div>
         </div>
       </div>
 

@@ -78,6 +78,20 @@ export default function TeamPage() {
 
   const isLoading = isLoadingTeams || isLoadingUsers;
 
+  const userIdsInAnyTeam = new Set(
+    (teams ?? []).flatMap((t: any) =>
+      (t.members ?? []).map((m: any) => m.userId),
+    ),
+  );
+  const workspaceMembersWithoutTeam = (users ?? []).filter(
+    (u: any) => !userIdsInAnyTeam.has(u.id),
+  );
+  const showWorkspaceWithoutTeamHint =
+    !isLoadingTeams &&
+    Array.isArray(teams) &&
+    teams.length > 0 &&
+    workspaceMembersWithoutTeam.length > 0;
+
   const addMemberMutation = useMutation({
     mutationFn: async ({ teamId, userId, role }: any) => {
       await api.post(`/team/${teamId}/member`, { userId, role });
@@ -162,6 +176,7 @@ export default function TeamPage() {
       );
       const projectsCount = memberProjectIds.size;
 
+      const orgUser = users?.find((u: { id: string }) => u.id === member.userId);
       return {
         id: member.user.id,
         name: member.user.name,
@@ -169,6 +184,7 @@ export default function TeamPage() {
         avatar: member.user.avatar,
         memberId: member.id,
         role: member.role,
+        orgRole: orgUser?.orgRole ?? null,
         teamName: team.name,
         teamId: team.id,
         projectsCount,
@@ -180,7 +196,7 @@ export default function TeamPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" data-tour="page-team">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <div className="text-text-light animate-pulse">Lädt Team-Daten...</div>
@@ -191,7 +207,7 @@ export default function TeamPage() {
 
   if (teamsError && !teams) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" data-tour="page-team">
         <div className="text-center">
           <div className="text-red-600 mb-4">Fehler beim Laden der Team-Daten</div>
           <button
@@ -206,7 +222,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="min-w-0 overflow-hidden">
+    <div className="min-w-0 overflow-hidden" data-tour="page-team">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 min-w-0">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-black text-dark mb-1 truncate">Team</h1>
@@ -230,6 +246,28 @@ export default function TeamPage() {
           </button>
         </div>
       </div>
+
+      {showWorkspaceWithoutTeamHint && (
+        <div
+          className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 sm:px-6 text-amber-950 min-w-0"
+          role="status"
+        >
+          <p className="font-semibold text-sm sm:text-base mb-2">
+            Workspace-Mitglieder ohne Team-Zuordnung
+          </p>
+          <p className="text-sm text-amber-900/90 mb-3">
+            {workspaceMembersWithoutTeam.map((u: any) => u.name).join(', ')} — noch in keinem Team
+            erfasst. Einmal synchronisieren, falls Daten älter sind.
+          </p>
+          <button
+            type="button"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['teams'] })}
+            className="bg-amber-800 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-amber-900 transition-colors"
+          >
+            Teams neu laden
+          </button>
+        </div>
+      )}
 
       {showCreateTeam && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

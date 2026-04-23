@@ -4,12 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useParams } from 'next/navigation';
 import { useState } from 'react';
 import api from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 
 export default function TeamMemberDetailPage() {
   const router = useRouter();
   const params = useParams();
   const memberId = params.id as string;
   const queryClient = useQueryClient();
+  const currentUser = useAuthStore((s) => s.user);
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: user, isLoading } = useQuery({
@@ -53,6 +55,32 @@ export default function TeamMemberDetailPage() {
 
   const memberInfo = memberTeam?.members.find((member: any) => member.userId === memberId);
 
+  const updateOrgRoleMutation = useMutation({
+    mutationFn: async (role: 'MEMBER' | 'ADMIN') => {
+      await api.patch(`/organizations/members/${memberId}/org-role`, { role });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['user', memberId] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+
+  const updateTeamRoleMutation = useMutation({
+    mutationFn: async (role: string) => {
+      if (!memberInfo?.id) return;
+      await api.patch(`/team/member/${memberInfo.id}`, { role });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['teams'] });
+      void queryClient.invalidateQueries({ queryKey: ['user', memberId] });
+    },
+  });
+
+  const canManageOrgRoles =
+    currentUser?.orgRole === 'OWNER' || currentUser?.orgRole === 'ADMIN';
+  const isSelf = currentUser?.id === memberId;
+
   if (isLoading) {
     return <div className="p-8">Lädt...</div>;
   }
@@ -60,6 +88,18 @@ export default function TeamMemberDetailPage() {
   if (!user) {
     return <div className="p-8">Mitglied nicht gefunden</div>;
   }
+
+  const targetOrgRole = (user as { orgRole?: string }).orgRole;
+  const canEditWorkspaceRole =
+    canManageOrgRoles &&
+    !isSelf &&
+    targetOrgRole &&
+    targetOrgRole !== 'OWNER' &&
+    !(currentUser?.orgRole === 'ADMIN' && targetOrgRole === 'ADMIN');
+  const canEditTeamRole =
+    (currentUser?.orgRole === 'OWNER' || currentUser?.orgRole === 'ADMIN') &&
+    !isSelf &&
+    memberInfo;
 
   const getInitials = (name: string) => {
     return name
@@ -102,13 +142,70 @@ export default function TeamMemberDetailPage() {
             <h2 className="text-xl font-bold text-dark mb-4">Informationen</h2>
             <div className="space-y-4">
               <div>
-                <div className="text-sm text-text-light">Rolle</div>
+                <div className="text-sm text-text-light">Team-Rolle</div>
                 <div className="font-semibold">{memberInfo?.role || 'Nicht zugewiesen'}</div>
+              </div>
+              <div>
+                <div className="text-sm text-text-light">Workspace-Rolle</div>
+                <div className="font-semibold">{targetOrgRole || '—'}</div>
               </div>
               {memberTeam && (
                 <div>
                   <div className="text-sm text-text-light">Team</div>
                   <div className="font-semibold">{memberTeam.name}</div>
+                </div>
+              )}
+              {(canEditWorkspaceRole || canEditTeamRole) && (
+                <div className="mt-4 border-t border-border pt-4 space-y-3">
+                  <div className="text-sm font-semibold text-dark">Rollen anpassen</div>
+                  {canEditWorkspaceRole ? (
+                    <div>
+                      <label className="block text-xs text-text-light mb-1">
+                        Workspace (Organisation)
+                      </label>
+                      <select
+                        className="w-full max-w-xs rounded-lg border border-border px-3 py-2 text-sm"
+                        value={targetOrgRole === 'ADMIN' ? 'ADMIN' : 'MEMBER'}
+                        disabled={updateOrgRoleMutation.isPending}
+                        onChange={(e) => {
+                          const v = e.target.value as 'MEMBER' | 'ADMIN';
+                          if (v !== targetOrgRole) {
+                            updateOrgRoleMutation.mutate(v);
+                          }
+                        }}
+                      >
+                        <option value="MEMBER">Mitglied</option>
+                        {currentUser?.orgRole === 'OWNER' ? (
+                          <option value="ADMIN">Administrator</option>
+                        ) : null}
+                      </select>
+                      {currentUser?.orgRole === 'ADMIN' ? (
+                        <p className="mt-1 text-xs text-text-light">
+                          Als Administrator können Sie keine weiteren Admins ernennen.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {canEditTeamRole ? (
+                    <div>
+                      <label className="block text-xs text-text-light mb-1">Im Team</label>
+                      <select
+                        className="w-full max-w-xs rounded-lg border border-border px-3 py-2 text-sm"
+                        value={memberInfo?.role ?? 'MEMBER'}
+                        disabled={updateTeamRoleMutation.isPending}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v !== memberInfo?.role) {
+                            updateTeamRoleMutation.mutate(v);
+                          }
+                        }}
+                      >
+                        <option value="MEMBER">Mitglied</option>
+                        <option value="MANAGER">Manager</option>
+                        <option value="OWNER">Owner (Team)</option>
+                      </select>
+                    </div>
+                  ) : null}
                 </div>
               )}
               <div>

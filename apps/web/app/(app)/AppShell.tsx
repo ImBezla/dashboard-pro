@@ -10,6 +10,8 @@ import { connectSocket } from '@/lib/realtime';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useRouter, usePathname } from 'next/navigation';
 import { isPathAllowedByModules } from '@/lib/route-modules';
+import { buildClearAuthTokenCookieHeader } from '@/lib/auth-token-cookie';
+import { ProductTour } from '@/components/onboarding/ProductTour';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -41,8 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       } catch {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        document.cookie =
-          'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = buildClearAuthTokenCookieHeader();
         window.location.href = '/login';
         return;
       }
@@ -63,8 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        document.cookie =
-          'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = buildClearAuthTokenCookieHeader();
         window.location.href = '/login';
       }
     })();
@@ -98,6 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative isolate h-dvh max-h-dvh min-h-0 w-full overflow-hidden bg-light">
       <BrandingEffect />
+      {user?.organizationId ? <ProductTour /> : null}
       <Sidebar />
       {/*
         Hauptbereich absolut positioniert (nicht in einer Flex-Zeile mit fixed-Sidebar-Geschwistern).
@@ -105,7 +106,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       */}
       <div className="absolute inset-0 left-0 z-0 flex min-h-0 min-w-0 flex-col lg:left-64">
         <TopBar />
-        <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain p-4 sm:p-6 lg:p-8">
+        <main
+          data-tour="app-main"
+          className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-6 lg:p-8"
+        >
           {children}
         </main>
       </div>

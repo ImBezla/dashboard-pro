@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import { decodeAuthCookieTokenValue } from './lib/auth-token-cookie';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'your-secret-key-change-in-production',
@@ -58,7 +59,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get('token')?.value;
+  const rawCookie = request.cookies.get('token')?.value;
+  const token = rawCookie ? decodeAuthCookieTokenValue(rawCookie) : undefined;
 
   /** Startseite: eingeloggte Nutzer mit Org direkt ins Dashboard. */
   if (pathname === '/' && token) {
@@ -82,6 +84,7 @@ export async function middleware(request: NextRequest) {
   if (!token) {
     const login = new URL('/login', request.url);
     login.searchParams.set('from', pathname);
+    login.searchParams.set('session', 'missing');
     return NextResponse.redirect(login);
   }
 
@@ -98,6 +101,7 @@ export async function middleware(request: NextRequest) {
   } catch {
     const login = new URL('/login', request.url);
     login.searchParams.set('from', pathname);
+    login.searchParams.set('session', 'invalid');
     return NextResponse.redirect(login);
   }
 

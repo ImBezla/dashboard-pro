@@ -7,6 +7,33 @@ export function getSiteUrl(): string {
   return 'http://localhost:8000';
 }
 
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+
+/**
+ * Anzeige im Footer (Copyright-Zeile): bei lokaler Dev-URL kein „localhost“,
+ * sondern bewusster Produkt-/Domain-Text — überschreibbar via NEXT_PUBLIC_FOOTER_SITE_LABEL.
+ */
+export function getFooterDisplayHost(): string {
+  const override = process.env.NEXT_PUBLIC_FOOTER_SITE_LABEL?.trim();
+  if (override) {
+    try {
+      const u = override.includes('://') ? override : `https://${override}`;
+      return new URL(u).hostname;
+    } catch {
+      return override.replace(/^https?:\/\//, '').split('/')[0] ?? override;
+    }
+  }
+  try {
+    const host = new URL(getSiteUrl()).hostname;
+    if (LOCAL_HOSTNAMES.has(host) || host.endsWith('.local')) {
+      return 'dashboardpro.de';
+    }
+    return host;
+  } catch {
+    return 'dashboardpro.de';
+  }
+}
+
 export const SITE_NAME = 'Dashboard Pro';
 export const SITE_DESCRIPTION_DE =
   'Arbeitsplattform für Projekt-, Team- und Aufgabenmanagement — Übersichten, Finanzen, Operations und mehr in einer App.';

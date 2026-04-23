@@ -1,4 +1,8 @@
 import { create } from 'zustand';
+import {
+  buildAuthTokenCookieHeader,
+  buildClearAuthTokenCookieHeader,
+} from './auth-token-cookie';
 
 export interface OrganizationBranding {
   displayName: string;
@@ -71,8 +75,6 @@ interface AuthState {
   logout: () => void;
 }
 
-const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 Tage
-
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
@@ -80,7 +82,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      document.cookie = `token=${token}; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; SameSite=Lax`;
+      document.cookie = buildAuthTokenCookieHeader(token);
     }
     set({ user, token });
   },
@@ -88,8 +90,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      document.cookie =
-        'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = buildClearAuthTokenCookieHeader();
     }
     set({ user: null, token: null });
   },

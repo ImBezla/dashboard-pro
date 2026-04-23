@@ -289,13 +289,6 @@ export function useOpsProcessStore() {
     [overlay, commitOverlay, hideSeedFlow],
   );
 
-  const restoreHiddenSeedFlows = useCallback(() => {
-    commitOverlay({
-      ...overlay,
-      hiddenSeedFlowIds: [],
-    });
-  }, [overlay, commitOverlay]);
-
   const saveGraphForFlow = useCallback(
     (flowId: string, nodes: FlowNode[], edges: FlowEdge[]) => {
       if (!isUserOwnedFlow(flowId)) return;
@@ -321,12 +314,10 @@ export function useOpsProcessStore() {
 
   return {
     store: merged,
-    overlayHiddenDemoCount: overlay.hiddenSeedFlowIds.length,
     addFlow,
     updateFlowMeta,
     deleteFlow,
     removeFlowFromWorkspace,
-    restoreHiddenSeedFlows,
     saveGraphForFlow,
     flowById,
     graphForFlow,

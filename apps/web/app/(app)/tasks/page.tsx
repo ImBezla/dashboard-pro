@@ -204,15 +204,17 @@ function TasksPageContent() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-dark mb-2">Aufgaben</h1>
-          <p className="text-lg text-text-light">
+    <div data-tour="page-tasks">
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-black text-dark mb-1 sm:mb-2 truncate">
+            Aufgaben
+          </h1>
+          <p className="text-sm sm:text-lg text-text-light">
             Verwalten Sie alle Aufgaben und To-Dos
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* View Toggle */}
           <div className="flex bg-light rounded-lg p-1">
             <button
@@ -234,7 +236,7 @@ function TasksPageContent() {
           </div>
           <button
             onClick={() => router.push('/tasks/new')}
-            className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
+            className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors min-h-[44px]"
           >
             + Neue Aufgabe
           </button>

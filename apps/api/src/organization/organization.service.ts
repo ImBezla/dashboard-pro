@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
@@ -85,6 +86,20 @@ export class OrganizationService {
         where: { id: userId },
         data: { activeOrganizationId: o.id },
       });
+      const defaultTeam = await tx.team.create({
+        data: {
+          name: `${dto.name.trim()} — Hauptteam`,
+          organizationId: o.id,
+          defaultMemberTeam: true,
+        },
+      });
+      await tx.teamMember.create({
+        data: {
+          teamId: defaultTeam.id,
+          userId,
+          role: 'MANAGER',
+        },
+      });
       return o;
     });
 
@@ -127,6 +142,29 @@ export class OrganizationService {
         role: 'MEMBER',
       },
     });
+
+    const defaultTeam = await this.prisma.team.findFirst({
+      where: { organizationId: org.id, defaultMemberTeam: true },
+    });
+    const targetTeam =
+      defaultTeam ??
+      (await this.prisma.team.findFirst({
+        where: { organizationId: org.id },
+        orderBy: { createdAt: 'asc' },
+      }));
+    if (targetTeam) {
+      await this.prisma.teamMember.upsert({
+        where: {
+          userId_teamId: { userId, teamId: targetTeam.id },
+        },
+        create: {
+          userId,
+          teamId: targetTeam.id,
+          role: 'MEMBER',
+        },
+        update: {},
+      });
+    }
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -456,6 +494,47 @@ export class OrganizationService {
     });
 
     return { joinCode };
+  }
+
+  /**
+   * Workspace-Rolle (Organisation): MEMBER / ADMIN — nicht für OWNER-Einträge.
+   * OWNER: volle Kontrolle; ADMIN: kann nur Mitglieder zu MEMBER machen, keine neuen Admins.
+   */
+  async updateOrganizationMemberRole(
+    actorUserId: string,
+    organizationId: string,
+    actorOrgRole: string | null,
+    targetUserId: string,
+    newRole: 'MEMBER' | 'ADMIN',
+  ) {
+    if (actorOrgRole !== 'OWNER' && actorOrgRole !== 'ADMIN') {
+      throw new ForbiddenException('Keine Berechtigung.');
+    }
+    if (actorUserId === targetUserId) {
+      throw new BadRequestException('Die eigene Rolle kann hier nicht geändert werden.');
+    }
+    const target = await this.prisma.organizationMember.findFirst({
+      where: { userId: targetUserId, organizationId },
+    });
+    if (!target) {
+      throw new NotFoundException('Mitglied nicht gefunden.');
+    }
+    if (target.role === 'OWNER') {
+      throw new BadRequestException('Die Rolle des Inhabers kann nicht geändert werden.');
+    }
+    if (actorOrgRole === 'ADMIN') {
+      if (newRole === 'ADMIN' || target.role === 'ADMIN') {
+        throw new ForbiddenException(
+          'Nur der Inhaber kann Administrator-Rollen vergeben oder ändern.',
+        );
+      }
+    }
+
+    await this.prisma.organizationMember.update({
+      where: { id: target.id },
+      data: { role: newRole },
+    });
+    return { userId: targetUserId, orgRole: newRole };
   }
 
   async getOrgFeatureFields(

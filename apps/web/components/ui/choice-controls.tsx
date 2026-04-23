@@ -81,38 +81,42 @@ export type FieldSelectProps = Omit<React.ComponentProps<'select'>, 'size'> & {
 };
 
 /**
- * Native `<select>` mit einheitlichem Rahmen, Fokus-Ring und Chevron (Safari/Chrome ähnlich).
+ * Native `<select>` mit klarer „Control“-Optik: Rahmen am Wrapper, Chevronschiene, `focus-within`.
  */
 export function FieldSelect({ wrapperClassName, className, children, disabled, ...rest }: FieldSelectProps) {
   return (
-    <div className={cn('relative', wrapperClassName)}>
+    <div
+      className={cn(
+        'group flex min-h-[2.75rem] w-full overflow-hidden rounded-xl border border-border bg-white shadow-sm ring-1 ring-black/[0.04] transition-[border-color,box-shadow,background-color]',
+        'hover:border-slate-300 hover:shadow dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/[0.06] dark:hover:border-zinc-500',
+        'focus-within:border-primary focus-within:shadow-md focus-within:ring-[3px] focus-within:ring-primary/18 dark:focus-within:ring-primary/22',
+        disabled && 'pointer-events-none opacity-55',
+        wrapperClassName,
+      )}
+    >
       <select
         disabled={disabled}
         className={cn(
-          'w-full cursor-pointer appearance-none rounded-xl border border-border bg-white py-2.5 pl-3 pr-10 text-sm font-normal leading-snug tracking-tight text-text antialiased shadow-sm transition-[color,box-shadow,border-color]',
-          'hover:border-slate-300 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15',
-          'disabled:cursor-not-allowed disabled:opacity-55',
-          /* globals.css setzt `.dark select` — hier bewusst überschreiben */
-          'dark:border-zinc-600 dark:!bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500 dark:focus:ring-primary/20',
+          'min-w-0 flex-1 cursor-pointer appearance-none border-0 bg-transparent py-2.5 pl-3.5 pr-2 text-[15px] font-medium leading-snug tracking-tight text-text antialiased outline-none sm:text-sm',
+          'disabled:cursor-not-allowed',
+          'dark:text-zinc-100',
           className,
         )}
         {...rest}
       >
         {children}
       </select>
-      <svg
+      <div
         aria-hidden
         className={cn(
-          'pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-light dark:text-zinc-500',
-          disabled && 'opacity-40',
+          'pointer-events-none flex shrink-0 items-center border-l border-border/75 bg-gradient-to-b from-slate-50 to-slate-100/95 px-2.5 text-text-light dark:border-zinc-600 dark:from-zinc-800 dark:to-zinc-900/95 dark:text-zinc-400',
+          'group-hover:border-slate-300/90 dark:group-hover:border-zinc-500',
         )}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-      </svg>
+        <svg className="h-4 w-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
     </div>
   );
 }

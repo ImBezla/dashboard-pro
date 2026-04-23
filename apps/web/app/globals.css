@@ -734,3 +734,52 @@ html.dark .auth-form-card input:-webkit-autofill:active {
   -webkit-text-fill-color: #1e293b !important;
   box-shadow: 0 0 0 1000px #ffffff inset !important;
 }
+
+/* Marketing-Startseite: sanftes Scrollen zu Ankern (Klasse setzt/unsetzt HomeLanding). */
+html.dp-landing-home {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.dp-landing-home {
+    scroll-behavior: auto;
+  }
+}
+
+/* Öffentliche Marketing-/Auth-/Rechts-Seiten: Eintritts-Animation (siehe PublicMarketingRouteEnter). */
+.dp-public-page-enter {
+  animation: dp-public-page-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dp-public-page-enter-legal {
+  animation: dp-public-page-enter-legal 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes dp-public-page-enter {
+  from {
+    opacity: 0.42;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes dp-public-page-enter-legal {
+  from {
+    opacity: 0.4;
+    transform: translate3d(-16px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-public-page-enter,
+  .dp-public-page-enter-legal {
+    animation: none;
+  }
+}

@@ -21,7 +21,10 @@ export class UserService {
         },
       },
     });
-    return members.map((m) => m.user);
+    return members.map((m) => ({
+      ...m.user,
+      orgRole: m.role,
+    }));
   }
 
   async findOne(id: string) {
@@ -57,16 +60,24 @@ export class UserService {
     if (!member) {
       throw new NotFoundException('Benutzer nicht gefunden');
     }
-    return member.user;
+    return {
+      ...member.user,
+      orgRole: member.role,
+    };
   }
 
   async update(
     id: string,
     data: { name?: string; email?: string; avatar?: string },
   ) {
+    const payload: { name?: string; email?: string; avatar?: string | null } = { ...data };
+    if (data.avatar !== undefined) {
+      const trimmed = data.avatar?.trim();
+      payload.avatar = trimmed && trimmed.length > 0 ? trimmed : null;
+    }
     return this.prisma.user.update({
       where: { id },
-      data,
+      data: payload,
       select: {
         id: true,
         email: true,

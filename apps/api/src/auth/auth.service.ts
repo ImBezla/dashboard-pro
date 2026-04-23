@@ -51,26 +51,131 @@ export class AuthService {
     return process.env.SKIP_EMAIL_VERIFICATION === 'true';
   }
 
+  /** Kurzer Gmail-Hinweis bei 535 / BadCredentials (Google SMTP). */
+  private gmailBadCredentialsHint(detail: string): string {
+    if (!detail) return '';
+    if (!/535|badcredentials|invalid login|not accepted/i.test(detail)) {
+      return '';
+    }
+    if (!/gsmtp|google\.com\/mail|support\.google\.com\/mail/i.test(detail)) {
+      return '';
+    }
+    return (
+      'Hinweis (Gmail/Google-Mail): Für den SMTP-Versand brauchen Sie ein App-Passwort ' +
+      '(Google-Konto → Sicherheit → 2‑Schritt‑Bestätigung aktivieren → App-Passwörter unter myaccount.google.com/apppasswords), ' +
+      'nicht Ihr normales Google-Passwort. SMTP_USER muss dieselbe Adresse sein wie das Gmail-/Google-Mail-Konto. ' +
+      'Leerzeichen im 16-stelligen App-Passwort werden von der API automatisch entfernt. ' +
+      'Alternative: RESEND_API_KEY in apps/api/.env (ohne Gmail-SMTP).'
+    );
+  }
+
+  private resendSetupHint(detail: string): string {
+    if (!detail) return '';
+    if (!/resend|domain|verify|not valid|testing emails|own email/i.test(detail)) {
+      return '';
+    }
+    if (/only send testing emails|your own email address/i.test(detail)) {
+      return (
+        'Hinweis (Resend-Sandbox): Mit Absender onboarding@resend.dev erlaubt Resend nur Mails an die Adresse, die bei Ihrem Resend-Konto hinterlegt ist (steht in der englischen Meldung). ' +
+        'Zum Testen: Registrierung mit genau dieser E-Mail — oder eine Domain unter resend.com/domains verifizieren und RESEND_FROM auf z. B. notify@ihre-domain.de setzen; danach sind beliebige Empfänger möglich.'
+      );
+    }
+    return (
+      'Hinweis (Resend): Domain unter resend.com/domains verifizieren und RESEND_FROM auf eine Absenderadresse dieser Domain setzen (nicht onboarding@ bei produktiven Empfängern).'
+    );
+  }
+
+  /**
+   * Nicht-Produktion: volle Fehlermeldung + ggf. Gmail-/Resend-Hinweis.
+   * Produktion: kein Rohdump, nur kurze Hinweise bei erkannten Mustern.
+   */
+  private smtpFailureSuffixForResponse(): string {
+    const detail = this.emailService.getLastTransportError() ?? '';
+    const gmailHint = this.gmailBadCredentialsHint(detail);
+    const resendHint = this.resendSetupHint(detail);
+
+    if (process.env.NODE_ENV === 'production') {
+      const hints = [gmailHint, resendHint].filter(Boolean).join(' ');
+      return hints ? ` ${hints}` : '';
+    }
+
+    const parts: string[] = [];
+    if (detail) {
+      parts.push(` Technische Meldung: ${detail}`);
+    }
+    if (gmailHint) {
+      parts.push(` ${gmailHint}`);
+    }
+    if (resendHint) {
+      parts.push(` ${resendHint}`);
+    }
+    return parts.join('');
+  }
+
+  /** Einheitliche Normalisierung (Login/Registrierung, Unicode-kompatibel). */
+  private normalizeAuthEmail(email: string): string {
+    return email.trim().toLowerCase().normalize('NFKC');
+  }
+
   async register(dto: RegisterDto) {
-    const normalizedEmail = dto.email.trim().toLowerCase();
+    const normalizedEmail = this.normalizeAuthEmail(dto.email);
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
-
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const now = new Date();
+    const trimmedName = dto.name.trim();
+
+    if (existingUser) {
+      if (existingUser.emailVerifiedAt) {
+        throw new ConflictException(
+          'Ein Konto mit dieser E-Mail existiert bereits. Bitte melden Sie sich an oder nutzen Sie „Passwort vergessen“.',
+        );
+      }
+      if (this.skipEmailVerification()) {
+        const user = await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            password: hashedPassword,
+            name: trimmedName,
+            emailVerifiedAt: now,
+            emailVerificationTokenHash: null,
+            emailVerificationExpiresAt: null,
+            lastVerificationEmailSentAt: null,
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            avatar: true,
+          },
+        });
+        const token = await this.issueTokenForUser(user.id);
+        const profile = await this.buildAuthProfile(user.id);
+        return { user: profile, token };
+      }
+      if (!this.emailService.isEmailOutboundConfigured()) {
+        throw new ConflictException(
+          'Diese E-Mail ist bereits für ein noch nicht bestätigtes Konto vergeben. Ohne konfigurierten E-Mail-Versand (Resend API-Key oder SMTP) können wir keine Bestätigungs-E-Mail erneut senden. Bitte RESEND_API_KEY oder SMTP einrichten, den Benutzer in der Datenbank entfernen oder SKIP_EMAIL_VERIFICATION=true (nur Entwicklung) setzen.',
+        );
+      }
+      await this.resendVerification(normalizedEmail);
+      return {
+        message:
+          'Diese E-Mail ist bereits registriert, aber noch nicht bestätigt. Wir haben eine neue Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihren Posteingang.',
+        email: normalizedEmail,
+      };
+    }
 
     if (this.skipEmailVerification()) {
       const user = await this.prisma.user.create({
         data: {
           email: normalizedEmail,
           password: hashedPassword,
-          name: dto.name,
+          name: trimmedName,
           role: 'MEMBER',
           emailVerifiedAt: now,
         },
@@ -92,9 +197,9 @@ export class AuthService {
       };
     }
 
-    if (!this.emailService.isSmtpConfigured()) {
+    if (!this.emailService.isEmailOutboundConfigured()) {
       throw new BadRequestException(
-        'E-Mail-Bestätigung ist aktiv, aber SMTP ist nicht konfiguriert. Bitte SMTP_HOST, SMTP_USER und SMTP_PASS setzen (oder Gmail mit App-Passwort). Für Test-/Beta-Umgebungen ohne Mailserver: SKIP_EMAIL_VERIFICATION=true.',
+        'E-Mail-Bestätigung ist aktiv, aber kein Versand konfiguriert. Bitte RESEND_API_KEY (empfohlen) oder SMTP_HOST/SMTP_USER/SMTP_PASS bzw. Gmail-App-Passwort setzen. Für lokale Tests ohne Mail: SKIP_EMAIL_VERIFICATION=true.',
       );
     }
 
@@ -108,7 +213,7 @@ export class AuthService {
       data: {
         email: normalizedEmail,
         password: hashedPassword,
-        name: dto.name,
+        name: trimmedName,
         role: 'MEMBER',
         emailVerifiedAt: null,
         emailVerificationTokenHash: verifyHash,
@@ -131,7 +236,10 @@ export class AuthService {
     if (!sent) {
       await this.prisma.user.delete({ where: { id: user.id } });
       throw new ServiceUnavailableException(
-        'Die Bestätigungs-E-Mail konnte nicht versendet werden (SMTP-Verbindung oder Provider). Bitte später erneut versuchen oder SMTP-Einstellungen prüfen.',
+        'Die Bestätigungs-E-Mail konnte nicht versendet werden. In der API-Konsole steht oft der genaue Fehler (SMTP oder Resend). ' +
+          'SMTP: Host/Port/SMTP_SECURE, SMTP_USER, SMTP_PASS bzw. GMAIL_APP_PASSWORD. Alternative ohne Gmail-SMTP: RESEND_API_KEY (+ optional RESEND_FROM mit verifizierter Domain). ' +
+          'Lokal ohne Mailserver: apps/api/.env SKIP_EMAIL_VERIFICATION=true und API neu starten.' +
+          this.smtpFailureSuffixForResponse(),
       );
     }
 
@@ -180,7 +288,7 @@ export class AuthService {
   }
 
   async resendVerification(email: string) {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = this.normalizeAuthEmail(email);
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -194,9 +302,9 @@ export class AuthService {
       return generic;
     }
 
-    if (!this.emailService.isSmtpConfigured()) {
+    if (!this.emailService.isEmailOutboundConfigured()) {
       throw new BadRequestException(
-        'SMTP ist nicht konfiguriert — eine neue Bestätigungs-E-Mail kann nicht versendet werden.',
+        'E-Mail-Versand ist nicht konfiguriert — eine neue Bestätigungs-E-Mail kann nicht versendet werden (RESEND_API_KEY oder SMTP).',
       );
     }
 
@@ -229,7 +337,9 @@ export class AuthService {
 
     if (!sent) {
       throw new ServiceUnavailableException(
-        'Die Bestätigungs-E-Mail konnte nicht versendet werden. Bitte prüfen Sie die SMTP-Einstellungen oder versuchen Sie es später erneut.',
+        'Die Bestätigungs-E-Mail konnte nicht versendet werden. API-Log prüfen (SMTP oder Resend). ' +
+          'Lokal ohne Mail: SKIP_EMAIL_VERIFICATION=true in apps/api/.env.' +
+          this.smtpFailureSuffixForResponse(),
       );
     }
 
@@ -237,10 +347,14 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const normalizedEmail = dto.email?.trim().toLowerCase() || '';
+    const normalizedEmail = dto.email
+      ? this.normalizeAuthEmail(dto.email)
+      : '';
 
     if (!normalizedEmail || !dto.password) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(
+        'E-Mail oder Passwort ist nicht korrekt. Bitte prüfen Sie Ihre Eingabe.',
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -248,13 +362,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(
+        'E-Mail oder Passwort ist nicht korrekt. Bitte prüfen Sie Ihre Eingabe.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(
+        'E-Mail oder Passwort ist nicht korrekt. Bitte prüfen Sie Ihre Eingabe.',
+      );
     }
 
     if (!user.emailVerifiedAt) {
@@ -271,7 +389,7 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = this.normalizeAuthEmail(email);
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -285,7 +403,7 @@ export class AuthService {
       return ok;
     }
 
-    if (!this.emailService.isSmtpConfigured()) {
+    if (!this.emailService.isEmailOutboundConfigured()) {
       return ok;
     }
 
@@ -316,7 +434,8 @@ export class AuthService {
         },
       });
       throw new ServiceUnavailableException(
-        'Die E-Mail zum Zurücksetzen des Passworts konnte nicht versendet werden. Bitte prüfen Sie die SMTP-Einstellungen oder versuchen Sie es später erneut.',
+        'Die E-Mail zum Zurücksetzen des Passworts konnte nicht versendet werden. Bitte prüfen Sie die SMTP-Einstellungen oder versuchen Sie es später erneut.' +
+          this.smtpFailureSuffixForResponse(),
       );
     }
 

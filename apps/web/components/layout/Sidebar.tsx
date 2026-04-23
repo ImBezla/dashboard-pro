@@ -137,6 +137,7 @@ export function Sidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
+                      data-tour-nav={item.href}
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 mb-1 rounded-lg transition-colors relative min-h-[44px] ${
                         isActive

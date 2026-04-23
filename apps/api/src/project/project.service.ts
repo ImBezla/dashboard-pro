@@ -4,6 +4,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ProjectService {
@@ -11,9 +12,22 @@ export class ProjectService {
     private prisma: PrismaService,
     private notificationsGateway: NotificationsGateway,
     private emailService: EmailService,
+    private audit: AuditService,
   ) {}
 
-  async create(dto: CreateProjectDto, organizationId: string) {
+  private async assertDealInOrg(dealId: string, organizationId: string) {
+    const d = await this.prisma.deal.findFirst({
+      where: { id: dealId, organizationId },
+    });
+    if (!d) throw new NotFoundException('Deal nicht gefunden');
+  }
+
+  async create(
+    dto: CreateProjectDto,
+    organizationId: string,
+    userId: string,
+    ipAddress?: string | null,
+  ) {
     if (dto.teamId) {
       const team = await this.prisma.team.findFirst({
         where: { id: dto.teamId, organizationId },
@@ -22,6 +36,9 @@ export class ProjectService {
         throw new NotFoundException('Team nicht gefunden');
       }
     }
+    if (dto.dealId) {
+      await this.assertDealInOrg(dto.dealId, organizationId);
+    }
     const project = await this.prisma.project.create({
       data: {
         name: dto.name,
@@ -29,6 +46,7 @@ export class ProjectService {
         status: dto.status || 'ACTIVE',
         deadline: dto.deadline ? new Date(dto.deadline) : null,
         teamId: dto.teamId,
+        dealId: dto.dealId ?? undefined,
         organizationId,
       },
       include: {
@@ -37,6 +55,13 @@ export class ProjectService {
       },
     });
     this.notificationsGateway.emitProjectCreated(project);
+    void this.audit.log({
+      userId,
+      organizationId,
+      action: 'project.create',
+      metadata: { projectId: project.id, name: project.name },
+      ipAddress: ipAddress ?? undefined,
+    });
     return project;
   }
 
@@ -94,6 +119,7 @@ export class ProjectService {
     dto: UpdateProjectDto,
     organizationId: string,
     actorUserId: string,
+    ipAddress?: string | null,
   ) {
     const existing = await this.findOne(id, organizationId);
     if (dto.teamId) {
@@ -104,6 +130,10 @@ export class ProjectService {
         throw new NotFoundException('Team nicht gefunden');
       }
     }
+    if (dto.dealId !== undefined) {
+      const raw = dto.dealId?.trim?.() ?? dto.dealId;
+      if (raw) await this.assertDealInOrg(String(raw), organizationId);
+    }
     const project = await this.prisma.project.update({
       where: { id },
       data: {
@@ -112,6 +142,12 @@ export class ProjectService {
         status: dto.status,
         deadline: dto.deadline ? new Date(dto.deadline) : undefined,
         teamId: dto.teamId,
+        dealId:
+          dto.dealId === undefined
+            ? undefined
+            : !dto.dealId || String(dto.dealId).trim() === ''
+              ? null
+              : dto.dealId,
       },
       include: {
         team: true,
@@ -155,13 +191,32 @@ export class ProjectService {
     }
 
     this.notificationsGateway.emitProjectUpdated(project);
+    void this.audit.log({
+      userId: actorUserId,
+      organizationId,
+      action: 'project.update',
+      metadata: { projectId: id, fields: Object.keys(dto) },
+      ipAddress: ipAddress ?? undefined,
+    });
     return project;
   }
 
-  async remove(id: string, organizationId: string) {
+  async remove(
+    id: string,
+    organizationId: string,
+    userId: string,
+    ipAddress?: string | null,
+  ) {
     await this.findOne(id, organizationId);
     await this.prisma.project.delete({ where: { id } });
     this.notificationsGateway.emitProjectDeleted(id, organizationId);
+    void this.audit.log({
+      userId,
+      organizationId,
+      action: 'project.delete',
+      metadata: { projectId: id },
+      ipAddress: ipAddress ?? undefined,
+    });
     return { message: 'Project deleted successfully' };
   }
 }

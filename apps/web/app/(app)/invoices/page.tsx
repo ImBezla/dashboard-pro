@@ -253,17 +253,19 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-dark mb-2">Rechnungen</h1>
-          <p className="text-lg text-text-light">
+    <div data-tour="page-invoices">
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-black text-dark mb-1 sm:mb-2 truncate">
+            Rechnungen
+          </h1>
+          <p className="text-sm sm:text-lg text-text-light">
             Rechnungsverwaltung und Zahlungsverfolgung
           </p>
         </div>
         <button
           onClick={() => setShowAddInvoice(true)}
-          className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
+          className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors min-h-[44px] self-start sm:self-auto"
         >
           + Neue Rechnung
         </button>

@@ -15,6 +15,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgGuard } from '../auth/guards/org.guard';
+import { getRequestIp } from '../common/request-ip.util';
 
 @Controller('tasks')
 @UseGuards(JwtAuthGuard, OrgGuard)
@@ -23,7 +24,12 @@ export class TaskController {
 
   @Post()
   create(@Request() req: any, @Body() dto: CreateTaskDto) {
-    return this.taskService.create(dto, req.user.organizationId);
+    return this.taskService.create(
+      dto,
+      req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
+    );
   }
 
   @Get()
@@ -57,12 +63,29 @@ export class TaskController {
       body.taskIds,
       body.data,
       req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
     );
   }
 
   @Post('bulk-delete')
   bulkDelete(@Request() req: any, @Body() body: { taskIds: string[] }) {
-    return this.taskService.bulkDelete(body.taskIds, req.user.organizationId);
+    return this.taskService.bulkDelete(
+      body.taskIds,
+      req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
+    );
+  }
+
+  @Post(':id/nudge')
+  nudge(@Request() req: any, @Param('id') id: string) {
+    return this.taskService.nudgeAssignee(
+      id,
+      req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
+    );
   }
 
   @Get(':id')
@@ -76,11 +99,22 @@ export class TaskController {
     @Param('id') id: string,
     @Body() dto: UpdateTaskDto,
   ) {
-    return this.taskService.update(id, dto, req.user.organizationId);
+    return this.taskService.update(
+      id,
+      dto,
+      req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
+    );
   }
 
   @Delete(':id')
   remove(@Request() req: any, @Param('id') id: string) {
-    return this.taskService.remove(id, req.user.organizationId);
+    return this.taskService.remove(
+      id,
+      req.user.organizationId,
+      req.user.id,
+      getRequestIp(req),
+    );
   }
 }

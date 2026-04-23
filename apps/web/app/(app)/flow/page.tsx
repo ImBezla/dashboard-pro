@@ -11,6 +11,7 @@ import { OpsOsFlowWorkbench } from '@/components/operations-os/flow/FlowWorkbenc
 import { FieldSelect } from '@/components/ui/choice-controls';
 import { ProcessMetaDialog } from '@/components/operations-os/ProcessMetaDialog';
 import { ProcessGallery } from '@/components/operations-os/ProcessGallery';
+import { FlowHowItWorks } from '@/components/operations-os/FlowHowItWorks';
 
 const DOMAIN_LABEL: Record<OperationalDomain, string> = {
   healthcare: 'Gesundheit / Patient',
@@ -27,8 +28,6 @@ function FlowWorkspaceContent() {
     addFlow,
     updateFlowMeta,
     removeFlowFromWorkspace,
-    restoreHiddenSeedFlows,
-    overlayHiddenDemoCount,
     saveGraphForFlow,
     flowById,
     graphForFlow,
@@ -97,7 +96,7 @@ function FlowWorkspaceContent() {
 
   if (view === 'gallery') {
     return (
-      <>
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <ProcessMetaDialog
           open={metaOpen}
           mode={metaMode}
@@ -125,6 +124,9 @@ function FlowWorkspaceContent() {
               : undefined
           }
         />
+        <div className="shrink-0 border-b border-border px-3 py-2 sm:px-0 dark:border-zinc-800">
+          <FlowHowItWorks />
+        </div>
         <ProcessGallery
           flows={store.flows}
           stepCounts={stepCounts}
@@ -154,10 +156,8 @@ function FlowWorkspaceContent() {
             setFlowId(id);
             router.replace(`/flow?flow=${encodeURIComponent(id)}`, { scroll: false });
           }}
-          hiddenDemoCount={overlayHiddenDemoCount}
-          onRestoreDemos={restoreHiddenSeedFlows}
         />
-      </>
+      </div>
     );
   }
 
@@ -269,17 +269,13 @@ function FlowWorkspaceContent() {
               <button
                 type="button"
                 onClick={() => {
-                  if (
-                    confirm(
-                      'Diese Demo-Vorlage aus deiner Liste entfernen? In der Galerie kannst du Demo-Prozesse wieder einblenden.',
-                    )
-                  ) {
+                  if (confirm('Prozess aus der Liste entfernen?')) {
                     removeFlowFromWorkspace(flowId);
                   }
                 }}
                 className="min-h-[44px] shrink-0 touch-manipulation rounded-lg border border-border bg-white/80 px-3 py-2 text-[11px] font-medium text-text-light transition-colors hover:border-red-200 hover:text-red-900 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-400 dark:hover:border-red-900/30 dark:hover:text-red-200 sm:min-h-0 sm:px-2 sm:py-1"
               >
-                Vorlage entfernen
+                Entfernen
               </button>
             )}
           </div>
@@ -319,7 +315,6 @@ function FlowWorkspaceContent() {
                   {store.flows.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.title}
-                      {isUserOwnedFlow(f.id) ? ' (eigen)' : ''}
                     </option>
                   ))}
                 </FieldSelect>
@@ -377,6 +372,9 @@ function FlowWorkspaceContent() {
           </div>
         ) : null}
       </header>
+      <div className="shrink-0 border-b border-border px-2 py-2 sm:px-0 dark:border-zinc-800">
+        <FlowHowItWorks />
+      </div>
       <div className="min-h-0 min-w-0 flex-1">
         <OpsOsFlowWorkbench
           flowId={flowId}

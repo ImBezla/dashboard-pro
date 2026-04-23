@@ -28,6 +28,8 @@ import { SupplierModule } from './supplier/supplier.module';
 import { OrganizationModule } from './organization/organization.module';
 import { OperationsOsModule } from './operations-os/operations-os.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { DealModule } from './deal/deal.module';
+import { CommandFeedModule } from './command-feed/command-feed.module';
 
 @Module({
   imports: [
@@ -69,6 +71,8 @@ import { RemindersModule } from './reminders/reminders.module';
     SupplierModule,
     OperationsOsModule,
     RemindersModule,
+    DealModule,
+    CommandFeedModule,
   ],
   providers: [
     {

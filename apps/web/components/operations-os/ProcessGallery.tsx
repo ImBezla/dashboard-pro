@@ -19,8 +19,6 @@ type Props = {
   onEditMeta: (id: string) => void;
   onRemoveFlow: (id: string) => void;
   onGoEditor: () => void;
-  hiddenDemoCount: number;
-  onRestoreDemos: () => void;
 };
 
 export function ProcessGallery({
@@ -31,8 +29,6 @@ export function ProcessGallery({
   onEditMeta,
   onRemoveFlow,
   onGoEditor,
-  hiddenDemoCount,
-  onRestoreDemos,
 }: Props) {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -40,8 +36,8 @@ export function ProcessGallery({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-text dark:text-zinc-100">Flow</h1>
-            <p className="mt-0.5 text-sm text-text-light dark:text-zinc-400">
-              Alle Abläufe auf einen Blick — öffnen, anpassen oder aus der Liste nehmen.
+            <p className="mt-0.5 text-xs text-text-light dark:text-zinc-400">
+              Prozesse öffnen oder neu anlegen.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -61,15 +57,6 @@ export function ProcessGallery({
             </button>
           </div>
         </div>
-        {hiddenDemoCount > 0 ? (
-          <button
-            type="button"
-            onClick={onRestoreDemos}
-            className="mt-3 text-left text-xs font-medium text-primary hover:underline"
-          >
-            {hiddenDemoCount} Demo-Prozess(e) wieder anzeigen
-          </button>
-        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-0 sm:py-6 sm:pb-6">
@@ -114,7 +101,7 @@ export function ProcessGallery({
                   )}
                   <p className="mt-3 text-xs text-text-light dark:text-zinc-500">
                     {steps} Schritt{steps === 1 ? '' : 'e'}
-                    {own ? ' · eigen' : ' · Vorlage'}
+                    {own ? ' · eigen' : ''}
                   </p>
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     <button
@@ -136,14 +123,18 @@ export function ProcessGallery({
                     <button
                       type="button"
                       onClick={() => {
-                        const msg = own
-                          ? 'Diesen eigenen Prozess inkl. Ablauf endgültig löschen?'
-                          : 'Diesen Demo-Prozess aus deiner Liste ausblenden? (Daten bleiben im Projekt, du kannst ihn später wiederherstellen.)';
-                        if (confirm(msg)) onRemoveFlow(f.id);
+                        if (
+                          confirm(
+                            own
+                              ? 'Diesen Prozess inkl. Ablauf endgültig löschen?'
+                              : 'Diesen Prozess aus der Liste entfernen?',
+                          )
+                        )
+                          onRemoveFlow(f.id);
                       }}
                       className="min-h-[44px] touch-manipulation rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-800 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200 sm:min-h-0 sm:px-4"
                     >
-                      {own ? 'Löschen' : 'Ausblenden'}
+                      {own ? 'Löschen' : 'Entfernen'}
                     </button>
                   </div>
                 </li>

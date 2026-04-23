@@ -57,8 +57,7 @@ export default function ForgotPasswordPage() {
 
         {sent ? (
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm mb-6">
-            Wenn ein Konto mit dieser E-Mail existiert, erhalten Sie in Kürze eine
-            E-Mail mit einem Link zum Zurücksetzen.
+            Wenn ein Konto existiert, kommt eine E-Mail mit Link zum Zurücksetzen.
           </div>
         ) : (
           <>

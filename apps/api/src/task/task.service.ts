@@ -9,6 +9,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { ActivityService } from '../activity/activity.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class TaskService {
@@ -17,6 +18,7 @@ export class TaskService {
     private notificationsGateway: NotificationsGateway,
     private activityService: ActivityService,
     private emailService: EmailService,
+    private audit: AuditService,
   ) {}
 
   private async assertProjectInOrg(
@@ -36,7 +38,12 @@ export class TaskService {
     }
   }
 
-  async create(dto: CreateTaskDto, organizationId: string) {
+  async create(
+    dto: CreateTaskDto,
+    organizationId: string,
+    actorUserId: string,
+    ipAddress?: string | null,
+  ) {
     await this.assertProjectInOrg(dto.projectId, organizationId);
 
     const task = await this.prisma.task.create({
@@ -79,6 +86,14 @@ export class TaskService {
     if (dto.assignedToId) {
       void this.emailService.sendTaskAssignedEmail(dto.assignedToId, task.id);
     }
+
+    void this.audit.log({
+      userId: actorUserId,
+      organizationId,
+      action: 'task.create',
+      metadata: { taskId: task.id, title: task.title },
+      ipAddress: ipAddress ?? undefined,
+    });
 
     return task;
   }
@@ -169,7 +184,13 @@ export class TaskService {
     return task;
   }
 
-  async update(id: string, dto: UpdateTaskDto, organizationId: string) {
+  async update(
+    id: string,
+    dto: UpdateTaskDto,
+    organizationId: string,
+    actorUserId: string,
+    ipAddress?: string | null,
+  ) {
     await this.findOne(id, organizationId);
     const before = await this.prisma.task.findFirst({
       where: { id, project: { organizationId } },
@@ -224,10 +245,23 @@ export class TaskService {
       void this.emailService.sendTaskAssignedEmail(task.assignedToId, task.id);
     }
 
+    void this.audit.log({
+      userId: actorUserId,
+      organizationId,
+      action: 'task.update',
+      metadata: { taskId: id, fields: Object.keys(updateData) },
+      ipAddress: ipAddress ?? undefined,
+    });
+
     return task;
   }
 
-  async remove(id: string, organizationId: string) {
+  async remove(
+    id: string,
+    organizationId: string,
+    actorUserId: string,
+    ipAddress?: string | null,
+  ) {
     const task = await this.findOne(id, organizationId);
 
     await this.prisma.task.delete({
@@ -245,6 +279,14 @@ export class TaskService {
       organizationId,
     });
 
+    void this.audit.log({
+      userId: actorUserId,
+      organizationId,
+      action: 'task.delete',
+      metadata: { taskId: id },
+      ipAddress: ipAddress ?? undefined,
+    });
+
     return { message: 'Task deleted successfully' };
   }
 
@@ -252,6 +294,8 @@ export class TaskService {
     taskIds: string[],
     data: UpdateTaskDto,
     organizationId: string,
+    actorUserId: string,
+    ipAddress?: string | null,
   ) {
     const updateData: any = {};
 
@@ -287,13 +331,26 @@ export class TaskService {
       this.notificationsGateway.emitTaskUpdated(task, organizationId);
     });
 
+    void this.audit.log({
+      userId: actorUserId,
+      organizationId,
+      action: 'task.bulk_update',
+      metadata: { count: result.count, taskIds: taskIds.slice(0, 20) },
+      ipAddress: ipAddress ?? undefined,
+    });
+
     return {
       count: result.count,
       message: `${result.count} tasks updated successfully`,
     };
   }
 
-  async bulkDelete(taskIds: string[], organizationId: string) {
+  async bulkDelete(
+    taskIds: string[],
+    organizationId: string,
+    actorUserId: string,
+    ipAddress?: string | null,
+  ) {
     const result = await this.prisma.task.deleteMany({
       where: {
         id: { in: taskIds },
@@ -305,9 +362,52 @@ export class TaskService {
       this.notificationsGateway.emitTaskDeleted(id, organizationId);
     });
 
+    void this.audit.log({
+      userId: actorUserId,
+      organizationId,
+      action: 'task.bulk_delete',
+      metadata: { count: result.count },
+      ipAddress: ipAddress ?? undefined,
+    });
+
     return {
       count: result.count,
       message: `${result.count} tasks deleted successfully`,
     };
+  }
+
+  /**
+   * Manuelle Erinnerung an den Zuständigen (E-Mail/SMS nach Nutzerpräferenzen).
+   */
+  async nudgeAssignee(
+    id: string,
+    organizationId: string,
+    actorUserId: string,
+    ipAddress?: string | null,
+  ) {
+    const task = await this.findOne(id, organizationId);
+    if (!task.assignedToId) {
+      throw new BadRequestException(
+        'Kein Zuständiger — Erinnerung kann nicht gesendet werden.',
+      );
+    }
+    const sent = await this.emailService.sendDeadlineReminderEmail(
+      task.assignedToId,
+      task.id,
+    );
+    if (sent) {
+      await this.prisma.task.update({
+        where: { id: task.id },
+        data: { lastDeadlineReminderSentAt: new Date() },
+      });
+    }
+    void this.audit.log({
+      userId: actorUserId,
+      organizationId,
+      action: 'task.nudge_assignee',
+      metadata: { taskId: id, sent },
+      ipAddress: ipAddress ?? undefined,
+    });
+    return { ok: true as const, sent };
   }
 }

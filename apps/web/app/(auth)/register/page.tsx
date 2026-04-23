@@ -10,6 +10,7 @@ import {
   apiUnreachableUserMessage,
   isBrowserNetworkErrorMessage,
 } from '@/lib/browser-network-error';
+import { rememberLoginEmail } from '@/lib/saved-login-emails';
 
 const API_URL = API_BASE_URL;
 
@@ -18,10 +19,10 @@ const inputClassName =
 
 function passwordStrengthLabel(pw: string): { label: string; tone: 'muted' | 'warn' | 'ok' } {
   const len = pw.length;
-  if (len === 0) return { label: 'Mindestens 6 Zeichen', tone: 'muted' };
-  if (len < 6) return { label: `Noch ${6 - len} Zeichen bis zum Minimum`, tone: 'warn' };
-  if (len < 10) return { label: 'Ausreichend — längere Passwörter sind sicherer', tone: 'ok' };
-  return { label: 'Starkes Passwort', tone: 'ok' };
+  if (len === 0) return { label: 'mind. 6 Zeichen', tone: 'muted' };
+  if (len < 6) return { label: `noch ${6 - len} Zeichen`, tone: 'warn' };
+  if (len < 10) return { label: 'ok', tone: 'ok' };
+  return { label: 'stark', tone: 'ok' };
 }
 
 export default function RegisterPage() {
@@ -46,19 +47,19 @@ export default function RegisterPage() {
     const next: Record<string, string> = {};
     const trimmedName = name.trim();
     if (trimmedName.length < 2) {
-      next.name = 'Bitte geben Sie mindestens 2 Zeichen ein.';
+      next.name = 'Mindestens 2 Zeichen.';
     }
     const mail = email.trim().toLowerCase();
     if (!mail) {
-      next.email = 'Bitte geben Sie Ihre E-Mail-Adresse ein.';
+      next.email = 'E-Mail fehlt.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
-      next.email = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+      next.email = 'Ungültige E-Mail.';
     }
     if (password.length < 6) {
-      next.password = 'Das Passwort muss mindestens 6 Zeichen haben.';
+      next.password = 'Mind. 6 Zeichen.';
     }
     if (password !== confirmPassword) {
-      next.confirmPassword = 'Die Passwörter stimmen nicht überein.';
+      next.confirmPassword = 'Passwörter unterschiedlich.';
     }
     setFieldErrors(next);
     return Object.keys(next).length === 0;
@@ -117,6 +118,7 @@ export default function RegisterPage() {
         typeof (data as { email?: string }).email === 'string';
 
       if (mustVerify) {
+        rememberLoginEmail(email);
         setServerMessage(message as string);
         setRedirectSeconds(10);
         setAwaitingVerification(true);
@@ -168,11 +170,8 @@ export default function RegisterPage() {
           <header className="mb-8 border-b border-border pb-8 text-center">
             <DashboardProWordmarkHomeLink className="mx-auto" />
             <h1 className="mt-5 text-2xl font-bold leading-tight tracking-tight text-text sm:text-[1.65rem]">
-              Fast geschafft
+              E-Mail bestätigen
             </h1>
-            <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-text-light">
-              Bestätigen Sie Ihre E-Mail — danach können Sie sich anmelden.
-            </p>
           </header>
 
           {serverMessage && (
@@ -184,23 +183,13 @@ export default function RegisterPage() {
             </p>
           )}
 
-          <div
-            className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-text"
-            role="region"
-            aria-label="Nächste Schritte"
+          <p
+            className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-text text-center break-all"
+            role="status"
           >
-            <p className="mb-3">
-              Wir haben eine <strong>Bestätigungs-E-Mail</strong> an{' '}
-              <span className="font-medium break-all">{email.trim().toLowerCase()}</span>{' '}
-              gesendet. Bitte klicken Sie auf den Link in der E-Mail, bevor Sie sich
-              anmelden.
-            </p>
-            <ol className="list-decimal space-y-2 pl-5 text-text-light">
-              <li>Posteingang (und ggf. Spam-Ordner) prüfen</li>
-              <li>Bestätigungslink in der E-Mail öffnen</li>
-              <li>Mit E-Mail und Passwort anmelden</li>
-            </ol>
-          </div>
+            Link an <span className="font-medium">{email.trim().toLowerCase()}</span> — Posteingang
+            prüfen, dann anmelden.
+          </p>
 
           <Link
             href={loginAfterRegisterHref}
@@ -210,9 +199,9 @@ export default function RegisterPage() {
           </Link>
           <p className="mt-3 text-center text-xs text-text-light min-h-[1.25rem]">
             {redirectSeconds !== null && redirectSeconds > 0
-              ? `Automatische Weiterleitung in ${redirectSeconds}s …`
+              ? `Weiter in ${redirectSeconds}s`
               : redirectSeconds === 0
-                ? 'Weiterleitung …'
+                ? '…'
                 : null}
           </p>
         </div>
@@ -225,13 +214,9 @@ export default function RegisterPage() {
       <div className="auth-form-card bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <header className="mb-10 border-b border-border pb-8 text-center">
           <DashboardProWordmarkHomeLink className="mx-auto" />
-          <h1 className="mt-5 text-2xl font-bold leading-tight tracking-tight text-text sm:text-[1.65rem]">
-            Neues Konto erstellen
-          </h1>
-          <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-text-light">
-            Füllen Sie die Felder aus — danach richten Sie Ihren Workspace ein oder
-            treten Sie einem Team bei.
-          </p>
+            <h1 className="mt-5 text-2xl font-bold leading-tight tracking-tight text-text sm:text-[1.65rem]">
+              Registrieren
+            </h1>
         </header>
 
         {error && (
@@ -256,11 +241,8 @@ export default function RegisterPage() {
               htmlFor={`${id}-name`}
               className="block text-sm font-medium text-text mb-1"
             >
-              Ihr Name
+              Name
             </label>
-            <p id={`${id}-name-hint`} className="text-xs text-text-light mb-1">
-              So erscheinen Sie später im Workspace (z.&nbsp;B. Vor- und Nachname).
-            </p>
             <input
               id={`${id}-name`}
               name="name"
@@ -278,9 +260,7 @@ export default function RegisterPage() {
               enterKeyHint="next"
               placeholder="Max Mustermann"
               aria-invalid={Boolean(fieldErrors.name)}
-              aria-describedby={
-                fieldErrors.name ? `${id}-name-err` : `${id}-name-hint`
-              }
+              aria-describedby={fieldErrors.name ? `${id}-name-err` : undefined}
               className={`${inputClassName} disabled:cursor-not-allowed ${
                 fieldErrors.name ? 'border-red-400' : ''
               }`}
@@ -297,11 +277,8 @@ export default function RegisterPage() {
               htmlFor={`${id}-email`}
               className="block text-sm font-medium text-text mb-1"
             >
-              E-Mail-Adresse
+              E-Mail
             </label>
-            <p id={`${id}-email-hint`} className="text-xs text-text-light mb-1">
-              Wir senden den Bestätigungslink an diese Adresse.
-            </p>
             <input
               id={`${id}-email`}
               name="email"
@@ -318,9 +295,7 @@ export default function RegisterPage() {
               enterKeyHint="next"
               placeholder="name@firma.de"
               aria-invalid={Boolean(fieldErrors.email)}
-              aria-describedby={
-                fieldErrors.email ? `${id}-email-err` : `${id}-email-hint`
-              }
+              aria-describedby={fieldErrors.email ? `${id}-email-err` : undefined}
               className={`${inputClassName} disabled:cursor-not-allowed ${
                 fieldErrors.email ? 'border-red-400' : ''
               }`}
@@ -425,7 +400,7 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Konto wird erstellt…' : 'Registrieren'}
+            {loading ? '…' : 'Konto erstellen'}
           </button>
         </form>
 

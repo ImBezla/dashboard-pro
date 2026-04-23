@@ -256,7 +256,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-[200px] p-4">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-text-light animate-pulse text-sm sm:text-base">Lädt Dashboard-Daten...</div>
+          <div className="text-text-light animate-pulse text-sm sm:text-base">Lädt…</div>
         </div>
       </div>
     );
@@ -267,7 +267,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-[200px] p-4">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-text-light animate-pulse text-sm sm:text-base">Lädt Dashboard-Daten...</div>
+          <div className="text-text-light animate-pulse text-sm sm:text-base">Lädt…</div>
         </div>
       </div>
     );
@@ -281,12 +281,12 @@ export default function DashboardPage() {
     const raw = ax?.response?.data?.message;
     const message = Array.isArray(raw)
       ? raw.join(', ')
-      : raw || ax?.message || 'Server nicht erreichbar oder API-Fehler.';
+      : raw || ax?.message || 'Laden fehlgeschlagen.';
     return (
       <div className="flex items-center justify-center min-h-[200px] p-4">
         <div className="text-center max-w-md">
           <div className="text-red-600 mb-2 text-sm sm:text-base font-medium">
-            Fehler beim Laden der Dashboard-Daten
+            Dashboard konnte nicht geladen werden
           </div>
           <p className="text-text-light text-sm mb-4">{message}</p>
           <button
@@ -354,17 +354,14 @@ export default function DashboardPage() {
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-dark mb-1 truncate">
-            Management Dashboard
+            Dashboard
           </h1>
-          <p className="text-xs sm:text-sm text-text-light">
-            Übersicht über Geschäftsprozesse und Team-Performance
-          </p>
         </div>
         <button
           onClick={() => setShowWidgetConfig(true)}
           className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 text-sm font-medium text-text-light hover:text-dark bg-white border border-border rounded-xl hover:bg-light transition-colors touch-manipulation min-h-[44px] shrink-0"
         >
-          ⚙️ Widgets anpassen
+          ⚙️ Layout
         </button>
       </div>
 
@@ -377,7 +374,7 @@ export default function DashboardPage() {
           />
           <div className="fixed inset-0 sm:inset-auto sm:right-0 sm:top-0 sm:h-full w-full sm:w-96 max-h-[100dvh] sm:max-h-none bg-white shadow-2xl z-50 overflow-y-auto animate-slideIn rounded-none sm:rounded-l-xl">
             <div className="sticky top-0 bg-white border-b border-border p-4 flex items-center justify-between z-10 gap-2">
-              <h3 className="font-bold text-dark truncate">⚙️ Dashboard anpassen</h3>
+              <h3 className="font-bold text-dark truncate">⚙️ Layout</h3>
               <button
                 onClick={() => setShowWidgetConfig(false)}
                 className="p-2.5 -mr-1 hover:bg-light rounded-xl transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -393,12 +390,12 @@ export default function DashboardPage() {
                 <h4 className="text-sm font-semibold text-text-light uppercase tracking-wide mb-3">🎨 Vorlagen</h4>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { key: 'default', label: 'Standard', icon: '🏠', desc: 'Ausgewogen' },
-                    { key: 'minimal', label: 'Minimal', icon: '✨', desc: 'Nur Essentielles' },
-                    { key: 'detailed', label: 'Detailliert', icon: '📋', desc: 'Alles sichtbar' },
-                    { key: 'manager', label: 'Manager', icon: '👔', desc: 'Team & Umsatz' },
-                    { key: 'developer', label: 'Entwickler', icon: '💻', desc: 'Tasks & Code' },
-                    { key: 'custom', label: 'Eigenes', icon: '🛠️', desc: 'Angepasst' },
+                    { key: 'default', label: 'Standard', icon: '🏠' },
+                    { key: 'minimal', label: 'Minimal', icon: '✨' },
+                    { key: 'detailed', label: 'Detailliert', icon: '📋' },
+                    { key: 'manager', label: 'Manager', icon: '👔' },
+                    { key: 'developer', label: 'Entwickler', icon: '💻' },
+                    { key: 'custom', label: 'Eigenes', icon: '🛠️' },
                   ].map((preset) => (
                     <button
                       key={preset.key}
@@ -417,7 +414,6 @@ export default function DashboardPage() {
                     >
                       <div className="text-lg">{preset.icon}</div>
                       <div className="font-medium text-sm text-dark">{preset.label}</div>
-                      <div className="text-xs text-text-light">{preset.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -428,14 +424,14 @@ export default function DashboardPage() {
                 <h4 className="text-sm font-semibold text-text-light uppercase tracking-wide mb-3">📦 Bereiche</h4>
                 <div className="space-y-2">
                   {[
-                    { key: 'metrics' as const, label: 'Metriken', icon: '📊', desc: 'KPIs oben' },
-                    { key: 'team' as const, label: 'Team', icon: '👥', desc: 'Team-Mitglieder' },
-                    { key: 'projects' as const, label: 'Projekte', icon: '📁', desc: 'Projektübersicht' },
-                    { key: 'tasks' as const, label: 'Aufgaben', icon: '✅', desc: 'To-Do Liste' },
-                    { key: 'activities' as const, label: 'Aktivitäten', icon: '🔔', desc: 'Live-Feed' },
-                    { key: 'quickActions' as const, label: 'Schnellzugriff', icon: '⚡', desc: 'Buttons' },
-                    { key: 'calendar' as const, label: 'Kalender', icon: '📅', desc: 'Mini-Kalender' },
-                    { key: 'recentFiles' as const, label: 'Dateien', icon: '📄', desc: 'Letzte Uploads' },
+                    { key: 'metrics' as const, label: 'Metriken', icon: '📊' },
+                    { key: 'team' as const, label: 'Team', icon: '👥' },
+                    { key: 'projects' as const, label: 'Projekte', icon: '📁' },
+                    { key: 'tasks' as const, label: 'Aufgaben', icon: '✅' },
+                    { key: 'activities' as const, label: 'Aktivitäten', icon: '🔔' },
+                    { key: 'quickActions' as const, label: 'Schnellzugriff', icon: '⚡' },
+                    { key: 'calendar' as const, label: 'Kalender', icon: '📅' },
+                    { key: 'recentFiles' as const, label: 'Dateien', icon: '📄' },
                   ].map((widget) => (
                     <label
                       key={widget.key}
@@ -453,7 +449,6 @@ export default function DashboardPage() {
                       <span className="text-lg">{widget.icon}</span>
                       <div className="flex-1">
                         <span className="text-sm font-medium text-dark">{widget.label}</span>
-                        <span className="text-xs text-text-light ml-2">{widget.desc}</span>
                       </div>
                     </label>
                   ))}
@@ -501,10 +496,10 @@ export default function DashboardPage() {
                 <h4 className="text-sm font-semibold text-text-light uppercase tracking-wide mb-3">🎛️ Darstellung</h4>
                 <div className="space-y-3">
                   {[
-                    { key: 'compactMode' as const, label: 'Kompakt-Modus', desc: 'Weniger Abstände' },
-                    { key: 'darkCards' as const, label: 'Dunkle Karten', desc: 'Kontrast erhöhen' },
-                    { key: 'animationsEnabled' as const, label: 'Animationen', desc: 'Übergänge' },
-                    { key: 'showTrends' as const, label: 'Trends anzeigen', desc: '+/- Änderungen' },
+                    { key: 'compactMode' as const, label: 'Kompakt' },
+                    { key: 'darkCards' as const, label: 'Dunkle Karten' },
+                    { key: 'animationsEnabled' as const, label: 'Animationen' },
+                    { key: 'showTrends' as const, label: 'Trends' },
                   ].map((option) => (
                     <label
                       key={option.key}
@@ -512,7 +507,6 @@ export default function DashboardPage() {
                     >
                       <div>
                         <span className="text-sm font-medium text-dark">{option.label}</span>
-                        <p className="text-xs text-text-light">{option.desc}</p>
                       </div>
                       <input
                         type="checkbox"
@@ -594,7 +588,7 @@ export default function DashboardPage() {
                 }}
                 className="w-full px-4 py-2 text-sm font-medium text-text border border-border rounded-lg hover:bg-light transition-colors"
               >
-                🔄 Auf Standard zurücksetzen
+                ↺ Standard
               </button>
             </div>
           </div>
@@ -625,7 +619,9 @@ export default function DashboardPage() {
               ).length || 0}
               subtitle={dashboardData.projectSummaries?.length ? `${dashboardData.projectSummaries.length} gesamt` : undefined}
               trend={{ 
-                value: dashboardData.trends?.projects ? `${dashboardData.trends.projects > 0 ? '+' : ''}${dashboardData.trends.projects} neue` : '0 neue', 
+                value: dashboardData.trends?.projects
+                  ? `${dashboardData.trends.projects > 0 ? '+' : ''}${dashboardData.trends.projects}`
+                  : '—',
                 positive: (dashboardData.trends?.projects || 0) >= 0 
               }}
               icon={<IconFolder />}
@@ -655,9 +651,9 @@ export default function DashboardPage() {
             title="Aufgaben"
             value={`${dashboardData.tasksSummary?.done || 0}/${dashboardData.tasksSummary?.total || 0}`}
             trend={{ 
-              value: dashboardData.tasksSummary?.total 
-                ? `${Math.round(((dashboardData.tasksSummary.done || 0) / dashboardData.tasksSummary.total) * 100)}% erledigt`
-                : '0% erledigt', 
+              value: dashboardData.tasksSummary?.total
+                ? `${Math.round(((dashboardData.tasksSummary.done || 0) / dashboardData.tasksSummary.total) * 100)}%`
+                : '—',
               positive: dashboardData.tasksSummary?.total 
                 ? ((dashboardData.tasksSummary.done || 0) / dashboardData.tasksSummary.total) >= 0.5
                 : false
@@ -677,10 +673,11 @@ export default function DashboardPage() {
               <div className="min-w-0">
                 <div className="text-lg font-semibold text-dark truncate">Team</div>
               </div>
-              <div className="flex items-center gap-2 text-success text-xs font-medium">
-                <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-                Live
-              </div>
+              <div
+                className="w-1.5 h-1.5 bg-success rounded-full animate-pulse shrink-0"
+                title="Live"
+                aria-label="Live"
+              />
             </div>
             <div
               className={`grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0 ${
@@ -700,13 +697,13 @@ export default function DashboardPage() {
                   <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                     <IconUsers />
                   </div>
-                  <p className="mb-4 text-sm">Keine Team-Mitglieder vorhanden</p>
+                  <p className="mb-3 text-sm text-text-light">Kein Team</p>
                   <button
                     onClick={() => router.push('/team')}
                     className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-dark transition-colors text-sm"
                   >
                     <IconUserPlus />
-                    Team-Mitglied hinzufügen
+                    Zum Team
                   </button>
                 </div>
               )}
@@ -717,7 +714,7 @@ export default function DashboardPage() {
                   onClick={() => router.push('/team')}
                   className="text-primary hover:text-primary-dark text-sm font-semibold"
                 >
-                  + {moreTeamMembersCount} weitere Team-Mitglieder anzeigen →
+                  +{moreTeamMembersCount} →
                 </button>
               </div>
             )}
@@ -747,7 +744,7 @@ export default function DashboardPage() {
                       onClick={() => router.push('/projects')}
                       className="w-full text-center text-primary hover:text-primary-dark text-sm font-medium py-2"
                     >
-                      {moreProjectsCount} weitere anzeigen
+                      +{moreProjectsCount}
                     </button>
                   )}
                 </>
@@ -756,7 +753,7 @@ export default function DashboardPage() {
                   <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                     <IconFolder />
                   </div>
-                  <p className="mb-4 text-sm">Keine Projekte vorhanden</p>
+                  <p className="mb-3 text-sm text-text-light">Keine Projekte</p>
                   <button
                     onClick={() => router.push('/projects/new')}
                     className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-dark transition-colors text-sm"
@@ -780,15 +777,16 @@ export default function DashboardPage() {
               <div className="text-lg font-semibold text-dark truncate">Aufgaben</div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-              <div className="flex items-center gap-2 text-success text-xs font-medium">
-                <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-                Echtzeit
-              </div>
+              <div
+                className="w-1.5 h-1.5 bg-success rounded-full animate-pulse shrink-0"
+                title="Live"
+                aria-label="Live"
+              />
               <button
                 onClick={() => router.push('/tasks')}
                 className="text-primary hover:text-primary-dark text-sm font-medium"
               >
-                Alle anzeigen →
+                Alle →
               </button>
             </div>
           </div>
@@ -807,7 +805,7 @@ export default function DashboardPage() {
                     onClick={() => router.push('/tasks')}
                     className="text-primary hover:text-primary-dark text-sm font-medium"
                   >
-                    {moreTasksCount} weitere anzeigen →
+                    +{moreTasksCount} →
                   </button>
                 </div>
               )}
@@ -817,7 +815,7 @@ export default function DashboardPage() {
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                 <IconCheckCircle />
               </div>
-              <p className="mb-4 text-sm">Keine Aufgaben vorhanden</p>
+              <p className="mb-3 text-sm text-text-light">Keine Aufgaben</p>
               <button
                 onClick={() => router.push('/tasks/new')}
                 className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-dark transition-colors text-sm"
@@ -855,9 +853,8 @@ export default function DashboardPage() {
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-200 rounded-lg flex items-center justify-center text-slate-600 shrink-0">
                 <IconFolderPlus />
               </div>
-              <div className="min-w-0 overflow-hidden">
+              <div className="min-w-0 overflow-hidden self-center">
                 <div className="font-medium text-dark text-sm truncate">Neues Projekt</div>
-                <div className="text-xs text-text-light truncate">Projekt anlegen</div>
               </div>
             </button>
             <button
@@ -867,9 +864,8 @@ export default function DashboardPage() {
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-200 rounded-lg flex items-center justify-center text-slate-600 shrink-0">
                 <IconCheckCircle />
               </div>
-              <div className="min-w-0 overflow-hidden">
+              <div className="min-w-0 overflow-hidden self-center">
                 <div className="font-medium text-dark text-sm truncate">Neue Aufgabe</div>
-                <div className="text-xs text-text-light truncate">Aufgabe anlegen</div>
               </div>
             </button>
             <button
@@ -879,9 +875,8 @@ export default function DashboardPage() {
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-200 rounded-lg flex items-center justify-center text-slate-600 shrink-0">
                 <IconCalendar />
               </div>
-              <div className="min-w-0 overflow-hidden">
-                <div className="font-medium text-dark text-sm truncate">Termin</div>
-                <div className="text-xs text-text-light truncate">Kalender öffnen</div>
+              <div className="min-w-0 overflow-hidden self-center">
+                <div className="font-medium text-dark text-sm truncate">Kalender</div>
               </div>
             </button>
             <button
@@ -891,9 +886,8 @@ export default function DashboardPage() {
               <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-200 rounded-lg flex items-center justify-center text-slate-600 shrink-0">
                 <IconUserPlus />
               </div>
-              <div className="min-w-0 overflow-hidden">
+              <div className="min-w-0 overflow-hidden self-center">
                 <div className="font-medium text-dark text-sm truncate">Kunde</div>
-                <div className="text-xs text-text-light truncate">Kunde anlegen</div>
               </div>
             </button>
           </div>

@@ -45,6 +45,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Web TypeScript
+        run: npm run typecheck --workspace=@dashboardpro/web
+
       - name: API unit tests
         run: npm test --workspace=@dashboardpro/api
 
