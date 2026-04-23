@@ -20,7 +20,7 @@ Vor **`docker compose … up`** im Repo-Root:
 npm run deploy:verify
 ```
 
-Das Skript **`scripts/verify-env-deploy.sh`** prüft u. a.: **`JWT_SECRET`** (Länge, kein Platzhalter), **`FRONTEND_URL`** / **`NEXT_PUBLIC_SITE_URL`** (**`https://`**, kein **localhost**), **`NEXT_PUBLIC_API_URL`** (**`https://…`** oder **`/api`**), **`DATABASE_URL`** (Postgres-Schema; bei **Supabase Direct `db.*.supabase.co`** Abbruch mit Hinweis auf **Session Pooler**; bei Supabase-Host **`sslmode=require`**), sowie **E-Mail** (**SMTP** oder **Gmail-App-Passwort** oder **`RESEND_API_KEY`**) — außer **`SKIP_EMAIL_VERIFICATION=true`** (nur Tests).
+Das Skript **`scripts/verify-env-deploy.sh`** prüft u. a.: **`JWT_SECRET`** (Länge, kein Platzhalter), **`FRONTEND_URL`** / **`NEXT_PUBLIC_SITE_URL`** (**`https://`**, kein **localhost**), **`NEXT_PUBLIC_API_URL`** (**`https://…`** oder **`/api`**), **`DATABASE_URL`** (Postgres-Schema; bei **Supabase Direct `db.*.supabase.co`** Abbruch mit Hinweis auf **Session Pooler**; bei Supabase-Host **`sslmode=require`**), sowie **E-Mail** (**SMTP** oder **Gmail-App-Passwort** oder **`RESEND_API_KEY`**) — außer **`SKIP_EMAIL_VERIFICATION=true`** (nur Tests). **`RESEND_API_KEY`** / **`RESEND_FROM`** werden im **API-Container** über **`docker-compose.deploy.yml`** aus **`.env.deploy`** übernommen.
 
 Die **API** bricht unter **`NODE_ENV=production`** zusätzlich ab, wenn **`JWT_SECRET`** zu schwach ist oder **`FRONTEND_URL`** keine öffentliche **`https://`**-URL ist (kein localhost).
 
