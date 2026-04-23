@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "SecurityAuditLog" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "organizationId" TEXT,
     "userId" TEXT NOT NULL,
     "action" TEXT NOT NULL,
