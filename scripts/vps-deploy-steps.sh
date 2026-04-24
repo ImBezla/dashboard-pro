@@ -107,6 +107,12 @@ Voraussetzungen auf dem VPS
 
 4) Container bauen & starten (im Repo-Root auf dem VPS)
 
+  Wenn **apps/api/prisma/migrations** zuletzt geändert wurde: **API-Image neu bauen**, sonst läuft im
+  Container noch **alte** migration.sql (häufiger Grund für P3009 nach git pull):
+     bash scripts/vps-rebuild-api.sh
+     (oder: npm run deploy:vps:rebuild-api — falls npm auf dem VPS installiert ist)
+
+  Vollständiger Stack (Web + API, nach größeren Pulls):
   Mit npm:
      npm run docker:deploy:up
 

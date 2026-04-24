@@ -34,7 +34,8 @@
     "deploy:preflight": "bash scripts/deploy-preflight.sh",
     "deploy:vps": "bash scripts/vps-deploy-steps.sh",
     "deploy:vps:update": "bash scripts/vps-deploy-steps.sh --update",
-    "deploy:vps:verify": "bash scripts/vps-deploy-steps.sh --verify"
+    "deploy:vps:verify": "bash scripts/vps-deploy-steps.sh --verify",
+    "deploy:vps:rebuild-api": "bash scripts/vps-rebuild-api.sh"
   },
   "devDependencies": {
     "turbo": "^1.10.0",
