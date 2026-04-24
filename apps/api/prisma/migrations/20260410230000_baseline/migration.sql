@@ -1,8 +1,9 @@
 -- Bridge: Nach init + CRM/Calendar existieren Kern-Tabellen bereits.
 -- Ergänzt Multi-Tenant (Organization), fehlende Tabellen und Spalten — ohne User/Team/… neu anzulegen.
+--
+-- Idempotent: Eine frühere fehlgeschlagene „baseline“-Version konnte bereits "Organization" o. ä. angelegt haben.
 
--- Organization (inkl. kind wie im aktuellen Prisma-Schema)
-CREATE TABLE "Organization" (
+CREATE TABLE IF NOT EXISTS "Organization" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "kind" TEXT NOT NULL DEFAULT 'OPERATING',
@@ -12,9 +13,12 @@ CREATE TABLE "Organization" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
-CREATE UNIQUE INDEX "Organization_joinCode_key" ON "Organization"("joinCode");
+-- Alte Teil-Migration ohne Spalte kind
+ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "kind" TEXT NOT NULL DEFAULT 'OPERATING';
 
-CREATE TABLE "OrganizationMember" (
+CREATE UNIQUE INDEX IF NOT EXISTS "Organization_joinCode_key" ON "Organization"("joinCode");
+
+CREATE TABLE IF NOT EXISTS "OrganizationMember" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -23,7 +27,7 @@ CREATE TABLE "OrganizationMember" (
     CONSTRAINT "OrganizationMember_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "OrganizationMember_userId_organizationId_key" ON "OrganizationMember"("userId", "organizationId");
+CREATE UNIQUE INDEX IF NOT EXISTS "OrganizationMember_userId_organizationId_key" ON "OrganizationMember"("userId", "organizationId");
 
 INSERT INTO "Organization" ("id", "name", "kind", "joinCode", "settings", "createdAt", "updatedAt")
 VALUES (
@@ -46,7 +50,7 @@ WHERE NOT EXISTS (
 );
 
 -- OpsWorkspaceState + UserNotificationPreferences (vorher in postgres_baseline)
-CREATE TABLE "OpsWorkspaceState" (
+CREATE TABLE IF NOT EXISTS "OpsWorkspaceState" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "payloadJson" TEXT NOT NULL,
@@ -54,9 +58,9 @@ CREATE TABLE "OpsWorkspaceState" (
     CONSTRAINT "OpsWorkspaceState_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "OpsWorkspaceState_organizationId_key" ON "OpsWorkspaceState"("organizationId");
+CREATE UNIQUE INDEX IF NOT EXISTS "OpsWorkspaceState_organizationId_key" ON "OpsWorkspaceState"("organizationId");
 
-CREATE TABLE "UserNotificationPreferences" (
+CREATE TABLE IF NOT EXISTS "UserNotificationPreferences" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "pushEnabled" BOOLEAN NOT NULL DEFAULT true,
@@ -80,7 +84,7 @@ CREATE TABLE "UserNotificationPreferences" (
     CONSTRAINT "UserNotificationPreferences_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "UserNotificationPreferences_userId_key" ON "UserNotificationPreferences"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "UserNotificationPreferences_userId_key" ON "UserNotificationPreferences"("userId");
 
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeOrganizationId" TEXT;
 
@@ -244,7 +248,7 @@ DROP INDEX IF EXISTS "PurchaseOrder_orderNumber_key";
 
 CREATE UNIQUE INDEX IF NOT EXISTS "PurchaseOrder_organizationId_orderNumber_key" ON "PurchaseOrder"("organizationId", "orderNumber");
 
-CREATE TABLE "Supplier" (
+CREATE TABLE IF NOT EXISTS "Supplier" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "email" TEXT,
@@ -274,7 +278,7 @@ EXCEPTION
 END $$;
 
 -- Weitere Tabellen (vorher im „Baseline“-Duplikat)
-CREATE TABLE "Comment" (
+CREATE TABLE IF NOT EXISTS "Comment" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "content" TEXT NOT NULL,
     "taskId" TEXT,
@@ -287,7 +291,7 @@ CREATE TABLE "Comment" (
     CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE "Tag" (
+CREATE TABLE IF NOT EXISTS "Tag" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -296,9 +300,9 @@ CREATE TABLE "Tag" (
     CONSTRAINT "Tag_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "Tag_organizationId_name_key" ON "Tag"("organizationId", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "Tag_organizationId_name_key" ON "Tag"("organizationId", "name");
 
-CREATE TABLE "TaskTag" (
+CREATE TABLE IF NOT EXISTS "TaskTag" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "taskId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
@@ -306,9 +310,9 @@ CREATE TABLE "TaskTag" (
     CONSTRAINT "TaskTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "TaskTag_taskId_tagId_key" ON "TaskTag"("taskId", "tagId");
+CREATE UNIQUE INDEX IF NOT EXISTS "TaskTag_taskId_tagId_key" ON "TaskTag"("taskId", "tagId");
 
-CREATE TABLE "ProjectTag" (
+CREATE TABLE IF NOT EXISTS "ProjectTag" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "projectId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
@@ -316,9 +320,9 @@ CREATE TABLE "ProjectTag" (
     CONSTRAINT "ProjectTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "ProjectTag_projectId_tagId_key" ON "ProjectTag"("projectId", "tagId");
+CREATE UNIQUE INDEX IF NOT EXISTS "ProjectTag_projectId_tagId_key" ON "ProjectTag"("projectId", "tagId");
 
-CREATE TABLE "TimeEntry" (
+CREATE TABLE IF NOT EXISTS "TimeEntry" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "description" TEXT,
     "duration" INTEGER NOT NULL,
@@ -333,7 +337,7 @@ CREATE TABLE "TimeEntry" (
     CONSTRAINT "TimeEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE "FileAttachment" (
+CREATE TABLE IF NOT EXISTS "FileAttachment" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "filename" TEXT NOT NULL,
     "originalName" TEXT NOT NULL,
