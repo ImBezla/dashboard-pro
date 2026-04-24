@@ -1,14 +1,19 @@
--- CreateTable
+-- Bridge: Nach init + CRM/Calendar existieren Kern-Tabellen bereits.
+-- Ergänzt Multi-Tenant (Organization), fehlende Tabellen und Spalten — ohne User/Team/… neu anzulegen.
+
+-- Organization (inkl. kind wie im aktuellen Prisma-Schema)
 CREATE TABLE "Organization" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
+    "kind" TEXT NOT NULL DEFAULT 'OPERATING',
     "joinCode" TEXT NOT NULL,
     "settings" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
--- CreateTable
+CREATE UNIQUE INDEX "Organization_joinCode_key" ON "Organization"("joinCode");
+
 CREATE TABLE "OrganizationMember" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -18,177 +23,227 @@ CREATE TABLE "OrganizationMember" (
     CONSTRAINT "OrganizationMember_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "User" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'MEMBER',
-    "avatar" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL
+CREATE UNIQUE INDEX "OrganizationMember_userId_organizationId_key" ON "OrganizationMember"("userId", "organizationId");
+
+INSERT INTO "Organization" ("id", "name", "kind", "joinCode", "settings", "createdAt", "updatedAt")
+VALUES (
+    '00000000-0000-4000-8000-000000000001',
+    'Default Organization',
+    'OPERATING',
+    'BOOTSTRAP-DEFAULT-ORG',
+    NULL,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+)
+ON CONFLICT ("id") DO NOTHING;
+
+INSERT INTO "OrganizationMember" ("id", "userId", "organizationId", "role")
+SELECT gen_random_uuid()::text, u."id", '00000000-0000-4000-8000-000000000001', 'OWNER'
+FROM "User" u
+WHERE NOT EXISTS (
+    SELECT 1 FROM "OrganizationMember" om
+    WHERE om."userId" = u."id" AND om."organizationId" = '00000000-0000-4000-8000-000000000001'
 );
 
--- CreateTable
-CREATE TABLE "Team" (
+-- OpsWorkspaceState + UserNotificationPreferences (vorher in postgres_baseline)
+CREATE TABLE "OpsWorkspaceState" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "payloadJson" TEXT NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Team_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "OpsWorkspaceState_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "TeamMember" (
+CREATE UNIQUE INDEX "OpsWorkspaceState_organizationId_key" ON "OpsWorkspaceState"("organizationId");
+
+CREATE TABLE "UserNotificationPreferences" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
-    "teamId" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'MEMBER',
-    CONSTRAINT "TeamMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "TeamMember_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "Project" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "deadline" TIMESTAMP(3),
-    "teamId" TEXT,
-    "organizationId" TEXT NOT NULL,
+    "pushEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "emailEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "smsEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "phoneE164" TEXT,
+    "emailTaskAssigned" BOOLEAN NOT NULL DEFAULT true,
+    "emailTaskDue" BOOLEAN NOT NULL DEFAULT true,
+    "emailProjectUpdate" BOOLEAN NOT NULL DEFAULT true,
+    "emailMentions" BOOLEAN NOT NULL DEFAULT true,
+    "emailWeeklyDigest" BOOLEAN NOT NULL DEFAULT false,
+    "emailCalendarEvents" BOOLEAN NOT NULL DEFAULT true,
+    "smsTaskAssigned" BOOLEAN NOT NULL DEFAULT false,
+    "smsTaskDue" BOOLEAN NOT NULL DEFAULT false,
+    "smsCalendarEvents" BOOLEAN NOT NULL DEFAULT false,
+    "smsConsentAt" TIMESTAMP(3),
+    "taskDueReminderDaysBefore" INTEGER NOT NULL DEFAULT 1,
+    "lastWeeklyDigestSentAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Project_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Project_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "UserNotificationPreferences_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "Task" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "title" TEXT NOT NULL,
-    "description" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'OPEN',
-    "priority" TEXT NOT NULL DEFAULT 'MEDIUM',
-    "deadline" TIMESTAMP(3),
-    "projectId" TEXT,
-    "assignedToId" TEXT,
-    "isRecurring" BOOLEAN NOT NULL DEFAULT false,
-    "recurrenceType" TEXT,
-    "recurrenceInterval" INTEGER DEFAULT 1,
-    "recurrenceEndDate" TIMESTAMP(3),
-    "parentTaskId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Task_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Task_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+CREATE UNIQUE INDEX "UserNotificationPreferences_userId_key" ON "UserNotificationPreferences"("userId");
 
--- CreateTable
-CREATE TABLE "Comment" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "content" TEXT NOT NULL,
-    "taskId" TEXT,
-    "projectId" TEXT,
-    "userId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Comment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Comment_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activeOrganizationId" TEXT;
 
--- CreateTable
-CREATE TABLE "Tag" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "organizationId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "color" TEXT NOT NULL DEFAULT '#6366f1',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Tag_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+DO $$
+BEGIN
+    ALTER TABLE "User" ADD CONSTRAINT "User_activeOrganizationId_fkey" FOREIGN KEY ("activeOrganizationId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateTable
-CREATE TABLE "TaskTag" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "taskId" TEXT NOT NULL,
-    "tagId" TEXT NOT NULL,
-    CONSTRAINT "TaskTag_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "TaskTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+UPDATE "User" SET "activeOrganizationId" = '00000000-0000-4000-8000-000000000001'
+WHERE "activeOrganizationId" IS NULL;
 
--- CreateTable
-CREATE TABLE "ProjectTag" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "projectId" TEXT NOT NULL,
-    "tagId" TEXT NOT NULL,
-    CONSTRAINT "ProjectTag_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "ProjectTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+-- Team / Project
+ALTER TABLE "Team" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
 
--- CreateTable
-CREATE TABLE "TimeEntry" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "description" TEXT,
-    "duration" INTEGER NOT NULL,
-    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "taskId" TEXT,
-    "projectId" TEXT,
-    "userId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "TimeEntry_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "TimeEntry_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "TimeEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+UPDATE "Team" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
 
--- CreateTable
-CREATE TABLE "ActivityLog" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "userId" TEXT,
-    "organizationId" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
-    "message" TEXT NOT NULL,
-    "metadata" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "ActivityLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "ActivityLog_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+ALTER TABLE "Team" ALTER COLUMN "organizationId" SET NOT NULL;
 
--- CreateTable
-CREATE TABLE "CalendarEvent" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "title" TEXT NOT NULL,
-    "description" TEXT,
-    "startDate" TIMESTAMP(3) NOT NULL,
-    "endDate" TIMESTAMP(3),
-    "userId" TEXT NOT NULL,
-    "organizationId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "CalendarEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "CalendarEvent_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+DO $$
+BEGIN
+    ALTER TABLE "Team" ADD CONSTRAINT "Team_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateTable
-CREATE TABLE "Customer" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "email" TEXT,
-    "phone" TEXT,
-    "company" TEXT,
-    "address" TEXT,
-    "notes" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'active',
-    "organizationId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Customer_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
 
--- CreateTable
+UPDATE "Project" p SET "organizationId" = t."organizationId"
+FROM "Team" t
+WHERE p."teamId" IS NOT NULL AND p."teamId" = t."id" AND p."organizationId" IS NULL;
+
+UPDATE "Project" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
+
+ALTER TABLE "Project" ALTER COLUMN "organizationId" SET NOT NULL;
+
+DO $$
+BEGIN
+    ALTER TABLE "Project" ADD CONSTRAINT "Project_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Task (Felder aus späterem „Baseline“-Schema)
+ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "isRecurring" BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "recurrenceType" TEXT;
+
+ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "recurrenceInterval" INTEGER DEFAULT 1;
+
+ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "recurrenceEndDate" TIMESTAMP(3);
+
+ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "parentTaskId" TEXT;
+
+ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "lastDeadlineReminderSentAt" TIMESTAMP(3);
+
+-- ActivityLog / CalendarEvent / CRM-Tabellen: organizationId
+ALTER TABLE "ActivityLog" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
+
+UPDATE "ActivityLog" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
+
+ALTER TABLE "ActivityLog" ALTER COLUMN "organizationId" SET NOT NULL;
+
+DO $$
+BEGIN
+    ALTER TABLE "ActivityLog" ADD CONSTRAINT "ActivityLog_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "CalendarEvent" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
+
+UPDATE "CalendarEvent" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
+
+ALTER TABLE "CalendarEvent" ALTER COLUMN "organizationId" SET NOT NULL;
+
+DO $$
+BEGIN
+    ALTER TABLE "CalendarEvent" ADD CONSTRAINT "CalendarEvent_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
+
+UPDATE "Customer" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
+
+ALTER TABLE "Customer" ALTER COLUMN "organizationId" SET NOT NULL;
+
+DO $$
+BEGIN
+    ALTER TABLE "Customer" ADD CONSTRAINT "Customer_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
+
+UPDATE "Invoice" i SET "organizationId" = c."organizationId" FROM "Customer" c WHERE i."customerId" = c."id" AND i."organizationId" IS NULL;
+
+UPDATE "Invoice" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
+
+ALTER TABLE "Invoice" ALTER COLUMN "organizationId" SET NOT NULL;
+
+DO $$
+BEGIN
+    ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+DROP INDEX IF EXISTS "Invoice_invoiceNumber_key";
+
+CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_organizationId_invoiceNumber_key" ON "Invoice"("organizationId", "invoiceNumber");
+
+ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
+
+UPDATE "Product" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
+
+ALTER TABLE "Product" ALTER COLUMN "organizationId" SET NOT NULL;
+
+DO $$
+BEGIN
+    ALTER TABLE "Product" ADD CONSTRAINT "Product_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- PurchaseOrder: Spalten an Prisma-Schema anpassen (ältere Migration nutzte "item" + REAL quantity)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'PurchaseOrder' AND column_name = 'item'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'PurchaseOrder' AND column_name = 'product'
+    ) THEN
+        ALTER TABLE "PurchaseOrder" RENAME COLUMN "item" TO "product";
+    END IF;
+END $$;
+
+ALTER TABLE "PurchaseOrder" ADD COLUMN IF NOT EXISTS "supplierId" TEXT;
+
+ALTER TABLE "PurchaseOrder" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
+
+UPDATE "PurchaseOrder" SET "organizationId" = '00000000-0000-4000-8000-000000000001' WHERE "organizationId" IS NULL;
+
+ALTER TABLE "PurchaseOrder" ALTER COLUMN "organizationId" SET NOT NULL;
+
+DO $$
+BEGIN
+    ALTER TABLE "PurchaseOrder" ALTER COLUMN "quantity" TYPE INTEGER USING GREATEST(1, ROUND("quantity")::integer);
+EXCEPTION
+    WHEN undefined_column THEN NULL;
+    WHEN datatype_mismatch THEN NULL;
+END $$;
+
+DROP INDEX IF EXISTS "PurchaseOrder_orderNumber_key";
+
+CREATE UNIQUE INDEX IF NOT EXISTS "PurchaseOrder_organizationId_orderNumber_key" ON "PurchaseOrder"("organizationId", "orderNumber");
+
 CREATE TABLE "Supplier" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
@@ -204,57 +259,80 @@ CREATE TABLE "Supplier" (
     CONSTRAINT "Supplier_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "Invoice" (
+DO $$
+BEGIN
+    ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Weitere Tabellen (vorher im „Baseline“-Duplikat)
+CREATE TABLE "Comment" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "invoiceNumber" TEXT NOT NULL,
-    "customerId" TEXT NOT NULL,
-    "amount" REAL NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'DRAFT',
-    "dueDate" TIMESTAMP(3),
-    "items" TEXT,
-    "organizationId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "taskId" TEXT,
+    "projectId" TEXT,
+    "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Invoice_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Invoice_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "Comment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Comment_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "Product" (
+CREATE TABLE "Tag" (
     "id" TEXT NOT NULL PRIMARY KEY,
+    "organizationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "description" TEXT,
-    "price" REAL NOT NULL,
-    "sku" TEXT,
-    "stock" INTEGER NOT NULL DEFAULT 0,
-    "category" TEXT,
-    "organizationId" TEXT NOT NULL,
+    "color" TEXT NOT NULL DEFAULT '#6366f1',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Product_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "Tag_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "PurchaseOrder" (
+CREATE UNIQUE INDEX "Tag_organizationId_name_key" ON "Tag"("organizationId", "name");
+
+CREATE TABLE "TaskTag" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "orderNumber" TEXT NOT NULL,
-    "supplier" TEXT NOT NULL,
-    "supplierId" TEXT,
-    "product" TEXT NOT NULL,
-    "quantity" INTEGER NOT NULL,
-    "unitPrice" REAL NOT NULL,
-    "total" REAL NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'PENDING',
-    "orderDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "organizationId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "PurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "PurchaseOrder_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "taskId" TEXT NOT NULL,
+    "tagId" TEXT NOT NULL,
+    CONSTRAINT "TaskTag_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "TaskTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
+CREATE UNIQUE INDEX "TaskTag_taskId_tagId_key" ON "TaskTag"("taskId", "tagId");
+
+CREATE TABLE "ProjectTag" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "tagId" TEXT NOT NULL,
+    CONSTRAINT "ProjectTag_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "ProjectTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "ProjectTag_projectId_tagId_key" ON "ProjectTag"("projectId", "tagId");
+
+CREATE TABLE "TimeEntry" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "description" TEXT,
+    "duration" INTEGER NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "taskId" TEXT,
+    "projectId" TEXT,
+    "userId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "TimeEntry_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "TimeEntry_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "TimeEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE "FileAttachment" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "filename" TEXT NOT NULL,
@@ -269,31 +347,3 @@ CREATE TABLE "FileAttachment" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "FileAttachment_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-
--- CreateIndex
-CREATE UNIQUE INDEX "Organization_joinCode_key" ON "Organization"("joinCode");
-
--- CreateIndex
-CREATE UNIQUE INDEX "OrganizationMember_userId_organizationId_key" ON "OrganizationMember"("userId", "organizationId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
-
--- CreateIndex
-CREATE UNIQUE INDEX "TeamMember_userId_teamId_key" ON "TeamMember"("userId", "teamId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Tag_organizationId_name_key" ON "Tag"("organizationId", "name");
-
--- CreateIndex
-CREATE UNIQUE INDEX "TaskTag_taskId_tagId_key" ON "TaskTag"("taskId", "tagId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "ProjectTag_projectId_tagId_key" ON "ProjectTag"("projectId", "tagId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Invoice_organizationId_invoiceNumber_key" ON "Invoice"("organizationId", "invoiceNumber");
-
--- CreateIndex
-CREATE UNIQUE INDEX "PurchaseOrder_organizationId_orderNumber_key" ON "PurchaseOrder"("organizationId", "orderNumber");
-

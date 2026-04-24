@@ -7,4 +7,4 @@ ALTER TABLE "User" ADD COLUMN "passwordResetExpiresAt" TIMESTAMP(3);
 ALTER TABLE "User" ADD COLUMN "lastVerificationEmailSentAt" TIMESTAMP(3);
 
 -- Bestehende Nutzer als verifiziert markieren (kein Lock-out)
-UPDATE "User" SET "emailVerifiedAt" = datetime('now') WHERE "emailVerifiedAt" IS NULL;
+UPDATE "User" SET "emailVerifiedAt" = CURRENT_TIMESTAMP WHERE "emailVerifiedAt" IS NULL;
