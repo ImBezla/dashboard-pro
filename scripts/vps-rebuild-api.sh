@@ -23,6 +23,14 @@ fi
 echo "==> API-Image neu bauen (Prisma-Migrations aus dem aktuellen Arbeitsbaum) …"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build --no-cache api
 
+# P3009: migrate deploy startet erst nach resolve. Image zuerst bauen (korrigierte .sql),
+# dann optional resolve, dann up — sonst läuft up sofort wieder in denselben Fehler.
+if [[ -n "${PRISMA_RESOLVE_ROLLED_BACK:-}" ]]; then
+  echo "==> prisma migrate resolve --rolled-back \"$PRISMA_RESOLVE_ROLLED_BACK\" …"
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps --entrypoint "" api \
+    sh -lc "cd /app/apps/api && exec /app/node_modules/.bin/prisma migrate resolve --rolled-back \"$PRISMA_RESOLVE_ROLLED_BACK\" --schema=prisma/schema.prisma"
+fi
+
 echo "==> API-Container starten …"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api
 
@@ -32,6 +40,7 @@ echo "  curl -sS http://127.0.0.1:3002/health"
 echo "  docker compose --env-file $ENV_FILE -f $COMPOSE_FILE ps"
 echo "  docker compose --env-file $ENV_FILE -f $COMPOSE_FILE logs --tail=80 api"
 echo ""
-echo "Bei P3009: zuerst Supabase public wipen (scripts/supabase-wipe-public-schema.sql) oder"
-echo "  bash scripts/prisma-resolve-failed-migration.sh rolled-back <MIGRATIONSNAME>"
-echo "Dann dieses Skript erneut ausführen."
+echo "Bei P3009 nach fehlgeschlagener Migration (ein Befehl, nach git pull mit Fix):"
+echo "  PRISMA_RESOLVE_ROLLED_BACK=<MIGRATIONSNAME> bash scripts/vps-rebuild-api.sh"
+echo "Oder manuell: bash scripts/prisma-resolve-failed-migration.sh rolled-back <NAME> → dann erneut build+up."
+echo "Halb kaputtes Schema: scripts/supabase-wipe-public-schema.sql in Supabase SQL, dann erneut deploy."

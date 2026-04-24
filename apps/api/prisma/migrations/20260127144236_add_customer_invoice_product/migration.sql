@@ -77,27 +77,11 @@ CREATE TABLE "PurchaseOrder" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
--- RedefineTables
-PRAGMA defer_foreign_keys=ON;
-PRAGMA foreign_keys=OFF;
-CREATE TABLE "new_Project" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "deadline" TIMESTAMP(3),
-    "teamId" TEXT,
-    "customerId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "Project_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Project_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-INSERT INTO "new_Project" ("createdAt", "deadline", "description", "id", "name", "status", "teamId", "updatedAt") SELECT "createdAt", "deadline", "description", "id", "name", "status", "teamId", "updatedAt" FROM "Project";
-DROP TABLE "Project";
-ALTER TABLE "new_Project" RENAME TO "Project";
-PRAGMA foreign_keys=ON;
-PRAGMA defer_foreign_keys=OFF;
+-- AlterTable (PostgreSQL: kein SQLite-PRAGMA / Tabellen-Rebuild)
+ALTER TABLE "Project" ADD COLUMN "customerId" TEXT;
+
+-- AddForeignKey
+ALTER TABLE "Project" ADD CONSTRAINT "Project_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Invoice_invoiceNumber_key" ON "Invoice"("invoiceNumber");
